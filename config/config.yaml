@@ -1,0 +1,21 @@
+data_paths:
+  application_train: 'data/raw/application_train.csv'
+  bureau: 'data/raw/bureau.csv'
+  bureau_balance: 'data/raw/bureau_balance.csv'
+  previous_application: 'data/raw/previous_application.csv'
+  installments_payments: 'data/raw/installments_payments.csv'
+  POS_CASH_balance: 'data/raw/POS_CASH_balance.csv'
+  credit_card_balance: 'data/raw/credit_card_balance.csv'
+  final_dataset: 'data/processed/application_train_final.csv'
+
+model_assets:
+  main_table_top_features: 'config/top_features.json'
+  final_top_features: 'config/final_top_features.json' 
+  pipeline_path: 'models/final_pipeline.joblib'
+  model_parameters: 'config/best_lgbm_params.json'
+  preprocessor_path: 'models/preprocessor.joblib'
+
+training_params:
+  target_column: 'TARGET'
+  test_size: 0.2
+  random_state: 42
