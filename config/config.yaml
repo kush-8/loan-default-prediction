@@ -1,12 +1,13 @@
 data_paths:
   application_train: 'data/raw/application_train.csv'
+  application_test: 'data/raw/application_test.csv'
   bureau: 'data/raw/bureau.csv'
   bureau_balance: 'data/raw/bureau_balance.csv'
   previous_application: 'data/raw/previous_application.csv'
   installments_payments: 'data/raw/installments_payments.csv'
   POS_CASH_balance: 'data/raw/POS_CASH_balance.csv'
   credit_card_balance: 'data/raw/credit_card_balance.csv'
-  final_dataset: 'data/processed/application_train_final.csv'
+  test_result: 'results.csv'
 
 model_assets:
   main_table_top_features: 'config/top_features.json'
