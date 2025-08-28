@@ -139,7 +139,7 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
 
         # --- Handle anomalies and create flags ---
         X_copy['DAYS_EMPLOYED_ANOMALY'] = (X_copy['DAYS_EMPLOYED'] == 365243)
-        X_copy['DAYS_EMPLOYED'].replace({365243: np.nan}, inplace=True)
+        X_copy['DAYS_EMPLOYED'] = X_copy['DAYS_EMPLOYED'].replace({365243: np.nan})
         X_copy['FLAG_OWN_CAR'] = X_copy['OWN_CAR_AGE'].notna().astype(int)
 
         # --- Create new ratio and time-based features ---
