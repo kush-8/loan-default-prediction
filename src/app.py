@@ -16,4 +16,4 @@ def predict_default(application_data: LoanApplication):
 
 @app.get("/")
 def read_root():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "API is running"}
