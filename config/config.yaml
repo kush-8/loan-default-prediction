@@ -8,6 +8,9 @@ data_paths:
   POS_CASH_balance: 'data/raw/POS_CASH_balance.csv'
   credit_card_balance: 'data/raw/credit_card_balance.csv'
   test_result: 'results.csv'
+  api_schema: 'config/api_schema.json'
+  column_descriptions: 'config/column_descriptions.json'
+  column_descriptions_csv: 'data/raw/HomeCredit_columns_description.csv'
 
 model_assets:
   main_table_top_features: 'config/top_features.json'

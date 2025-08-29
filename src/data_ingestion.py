@@ -1,4 +1,3 @@
-# src/data_ingestion.py
 import os
 import zipfile
 from kaggle.api.kaggle_api_extended import KaggleApi
