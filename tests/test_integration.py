@@ -12,7 +12,7 @@ def test_full_pipeline_integration():
     with open('config/config.yaml', 'r') as f:
         config = yaml.safe_load(f)
     
-    df = pd.read_csv(config['data_paths']['application_train'])
+    df = pd.read_csv(config['data_paths']['test_sample'])
     sample_data = df.sample(n=50, random_state=42)
     
     X_sample = sample_data.drop(columns=['TARGET'])

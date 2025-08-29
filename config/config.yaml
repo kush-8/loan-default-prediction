@@ -1,6 +1,7 @@
 data_paths:
   application_train: 'data/raw/application_train.csv'
   application_test: 'data/raw/application_test.csv'
+  test_sample: 'data/processed/test_sample.csv'
   bureau: 'data/raw/bureau.csv'
   bureau_balance: 'data/raw/bureau_balance.csv'
   previous_application: 'data/raw/previous_application.csv'
@@ -10,6 +11,7 @@ data_paths:
   test_result: 'results.csv'
   api_schema: 'config/api_schema.json'
   column_descriptions: 'config/column_descriptions.json'
+  categorical_enums: 'config/categorical_enums.json'
   column_descriptions_csv: 'data/raw/HomeCredit_columns_description.csv'
 
 model_assets:

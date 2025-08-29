@@ -1,2 +1,15 @@
-data/
+# Virtual Environments
 venv/
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data Files
+# Ignore all content in the data directory...
+data/*
+
+# ...but make an exception for the test sample file.
+!data/processed/test_sample.csv

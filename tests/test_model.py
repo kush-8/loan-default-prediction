@@ -14,12 +14,12 @@ with open('config/config.yaml', 'r') as f:
     config = yaml.safe_load(f)
 
 PIPELINE_PATH = config['model_assets']['pipeline_path']
-RAW_DATA_PATH = config['data_paths']['application_train']
+SAMPLE_DATA_PATH = config['data_paths']['test_sample']
 
 @pytest.fixture
 def sample_data():
     """Fixture to load a small sample of raw data for testing."""
-    return pd.read_csv(RAW_DATA_PATH).sample(n=100, random_state=42)
+    return pd.read_csv(SAMPLE_DATA_PATH).sample(n=100, random_state=42)
 
 @pytest.fixture
 def trained_pipeline():

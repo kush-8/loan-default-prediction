@@ -23,3 +23,14 @@ description_dict = app_descriptions.set_index('Row')['Description'].to_dict()
 with open(config['data_paths']['column_descriptions'], 'w') as f:
     json.dump(description_dict, f, indent=4)
 print(f"Column descriptions saved to {config['data_paths']['column_descriptions']}")
+
+# --- 3. Generate categorical enums ---
+categorical_cols = df_train.select_dtypes('object').columns
+enums_dict = {}
+for col in categorical_cols:
+    unique_values = [str(val) for val in df_train[col].unique() if pd.notna(val)]
+    enums_dict[col] = unique_values
+
+with open(config['data_paths']['categorical_enums'], 'w') as f:
+    json.dump(enums_dict, f, indent=4)
+print(f"Categorical enums saved to {config['data_paths']['categorical_enums']}")

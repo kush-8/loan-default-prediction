@@ -27,7 +27,7 @@ def test_predict_endpoint_valid_input():
         config = yaml.safe_load(f)
     
     # Load a sample of raw data to use as the request payload
-    df = pd.read_csv(config['data_paths']['application_train'])
+    df = pd.read_csv(config['data_paths']['test_sample'])
     sample_input = df.head(1).drop(columns=['TARGET'])
     
     # Replace any NaN values with None for JSON compatibility

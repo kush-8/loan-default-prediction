@@ -1,0 +1,174 @@
+{
+    "NAME_CONTRACT_TYPE": [
+        "Cash loans",
+        "Revolving loans"
+    ],
+    "CODE_GENDER": [
+        "M",
+        "F",
+        "XNA"
+    ],
+    "FLAG_OWN_CAR": [
+        "N",
+        "Y"
+    ],
+    "FLAG_OWN_REALTY": [
+        "Y",
+        "N"
+    ],
+    "NAME_TYPE_SUITE": [
+        "Unaccompanied",
+        "Family",
+        "Spouse, partner",
+        "Children",
+        "Other_A",
+        "Other_B",
+        "Group of people"
+    ],
+    "NAME_INCOME_TYPE": [
+        "Working",
+        "State servant",
+        "Commercial associate",
+        "Pensioner",
+        "Unemployed",
+        "Student",
+        "Businessman",
+        "Maternity leave"
+    ],
+    "NAME_EDUCATION_TYPE": [
+        "Secondary / secondary special",
+        "Higher education",
+        "Incomplete higher",
+        "Lower secondary",
+        "Academic degree"
+    ],
+    "NAME_FAMILY_STATUS": [
+        "Single / not married",
+        "Married",
+        "Civil marriage",
+        "Widow",
+        "Separated",
+        "Unknown"
+    ],
+    "NAME_HOUSING_TYPE": [
+        "House / apartment",
+        "Rented apartment",
+        "With parents",
+        "Municipal apartment",
+        "Office apartment",
+        "Co-op apartment"
+    ],
+    "OCCUPATION_TYPE": [
+        "Laborers",
+        "Core staff",
+        "Accountants",
+        "Managers",
+        "Drivers",
+        "Sales staff",
+        "Cleaning staff",
+        "Cooking staff",
+        "Private service staff",
+        "Medicine staff",
+        "Security staff",
+        "High skill tech staff",
+        "Waiters/barmen staff",
+        "Low-skill Laborers",
+        "Realty agents",
+        "Secretaries",
+        "IT staff",
+        "HR staff"
+    ],
+    "WEEKDAY_APPR_PROCESS_START": [
+        "WEDNESDAY",
+        "MONDAY",
+        "THURSDAY",
+        "SUNDAY",
+        "SATURDAY",
+        "FRIDAY",
+        "TUESDAY"
+    ],
+    "ORGANIZATION_TYPE": [
+        "Business Entity Type 3",
+        "School",
+        "Government",
+        "Religion",
+        "Other",
+        "XNA",
+        "Electricity",
+        "Medicine",
+        "Business Entity Type 2",
+        "Self-employed",
+        "Transport: type 2",
+        "Construction",
+        "Housing",
+        "Kindergarten",
+        "Trade: type 7",
+        "Industry: type 11",
+        "Military",
+        "Services",
+        "Security Ministries",
+        "Transport: type 4",
+        "Industry: type 1",
+        "Emergency",
+        "Security",
+        "Trade: type 2",
+        "University",
+        "Transport: type 3",
+        "Police",
+        "Business Entity Type 1",
+        "Postal",
+        "Industry: type 4",
+        "Agriculture",
+        "Restaurant",
+        "Culture",
+        "Hotel",
+        "Industry: type 7",
+        "Trade: type 3",
+        "Industry: type 3",
+        "Bank",
+        "Industry: type 9",
+        "Insurance",
+        "Trade: type 6",
+        "Industry: type 2",
+        "Transport: type 1",
+        "Industry: type 12",
+        "Mobile",
+        "Trade: type 1",
+        "Industry: type 5",
+        "Industry: type 10",
+        "Legal Services",
+        "Advertising",
+        "Trade: type 5",
+        "Cleaning",
+        "Industry: type 13",
+        "Trade: type 4",
+        "Telecom",
+        "Industry: type 8",
+        "Realtor",
+        "Industry: type 6"
+    ],
+    "FONDKAPREMONT_MODE": [
+        "reg oper account",
+        "org spec account",
+        "reg oper spec account",
+        "not specified"
+    ],
+    "HOUSETYPE_MODE": [
+        "block of flats",
+        "terraced house",
+        "specific housing"
+    ],
+    "WALLSMATERIAL_MODE": [
+        "Stone, brick",
+        "Block",
+        "Panel",
+        "Mixed",
+        "Wooden",
+        "Others",
+        "Monolithic"
+    ],
+    "EMERGENCYSTATE_MODE": [
+        "No",
+        "Yes"
+    ]
+}
