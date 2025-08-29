@@ -1,0 +1,28 @@
+# Build artifacts & local environment
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Git history
+.git
+.gitignore
+
+# Development & report folders
+notebooks/
+reports/
+scripts/
+
+# CI/CD and IDE configs
+.github/
+.vscode/
+.idea/
+
+# Large data and result files
+# Exclude all raw data except the two files needed for the API
+data/raw/*
+!data/raw/application_train.csv
+!data/raw/HomeCredit_columns_description.csv
+data/processed/
+submission.csv
