@@ -8,8 +8,6 @@ __pycache__/
 .pytest_cache/
 
 # Data Files
-# Ignore all content in the data directory...
-data/*
-
-# ...but make an exception for the test sample file.
-!data/processed/test_sample.csv
+data/raw
+data/processed/application_train_cleaned.csv
+data/processed/application_train_engineered.csv
