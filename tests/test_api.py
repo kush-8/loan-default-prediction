@@ -3,12 +3,28 @@ from fastapi.testclient import TestClient
 import pandas as pd
 import yaml
 import numpy as np
+import sys
+import os
 
-# Import your FastAPI app from the src directory
+# Add the src directory to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
+# Import your FastAPI app and schema from the src directory
 from src.app import app
+from src.api_schema import LoanApplication
 
 # Create a TestClient instance that can be used by all tests
 client = TestClient(app)
+
+# --- Fixture to provide sample data ---
+@pytest.fixture
+def sample_data():
+    """Fixture to load the small, saved test sample."""
+    with open('config/config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    return pd.read_csv(config['data_paths']['test_sample'])
+
+# --- Test Functions ---
 
 def test_read_root():
     """Tests the root endpoint for a successful 'ok' response."""
@@ -17,18 +33,13 @@ def test_read_root():
     assert response.json() == {"status": "ok", "message": "API is running"}
 
 @pytest.mark.filterwarnings("ignore:X does not have valid feature names")
-def test_predict_endpoint_valid_input():
+def test_predict_endpoint_valid_input(sample_data):
     """
     Tests the /predict endpoint with a valid data sample to ensure it
     returns a successful response and a valid prediction probability.
     """
-    # Load the configuration to find the raw data path
-    with open('config/config.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-    
-    # Load a sample of raw data to use as the request payload
-    df = pd.read_csv(config['data_paths']['test_sample'])
-    sample_input = df.head(1).drop(columns=['TARGET'])
+    # Use the data provided by the fixture
+    sample_input = sample_data.head(1).drop(columns=['TARGET'])
     
     # Replace any NaN values with None for JSON compatibility
     sample_input.replace({np.nan: None}, inplace=True)
