@@ -13,10 +13,6 @@ COPY src/ ./src
 COPY config/ ./config
 COPY models/ ./models
 
-# Copy the specific data files needed by the API
-COPY data/raw/application_train.csv ./data/raw/application_train.csv
-COPY data/raw/HomeCredit_columns_description.csv ./data/raw/HomeCredit_columns_description.csv
-
 # Expose the port the app runs on
 EXPOSE 8000
 
