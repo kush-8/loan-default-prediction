@@ -39,7 +39,6 @@ Usage
 
 import logging
 import os
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -52,6 +51,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Individual table aggregators
 # ---------------------------------------------------------------------------
+
 
 def _aggregate_bureau_balance(bureau_balance: pd.DataFrame) -> pd.DataFrame:
     """
@@ -70,9 +70,7 @@ def _aggregate_bureau_balance(bureau_balance: pd.DataFrame) -> pd.DataFrame:
     return bb_agg
 
 
-def _aggregate_bureau(
-    bureau: pd.DataFrame, bb_agg: pd.DataFrame
-) -> pd.DataFrame:
+def _aggregate_bureau(bureau: pd.DataFrame, bb_agg: pd.DataFrame) -> pd.DataFrame:
     """
     Aggregate bureau data (joined with bureau_balance) to SK_ID_CURR level.
 
@@ -115,10 +113,7 @@ def _aggregate_bureau(
         }
     )
     bureau_num_agg.columns = pd.Index(
-        [
-            "BUREAU_" + e[0] + "_" + e[1].upper()
-            for e in bureau_num_agg.columns.tolist()
-        ]
+        ["BUREAU_" + e[0] + "_" + e[1].upper() for e in bureau_num_agg.columns.tolist()]
     )
 
     return pd.concat([bureau_num_agg, bureau_cat_agg], axis=1)
@@ -227,10 +222,7 @@ def _aggregate_previous_application(prev: pd.DataFrame) -> pd.DataFrame:
         }
     )
     prev_num_agg.columns = pd.Index(
-        [
-            "PREV_" + e[0] + "_" + e[1].upper()
-            for e in prev_num_agg.columns.tolist()
-        ]
+        ["PREV_" + e[0] + "_" + e[1].upper() for e in prev_num_agg.columns.tolist()]
     )
 
     return pd.concat([prev_num_agg, prev_cat_agg], axis=1)
@@ -239,6 +231,7 @@ def _aggregate_previous_application(prev: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Main public function
 # ---------------------------------------------------------------------------
+
 
 def build_historical_features(config: dict) -> pd.DataFrame:
     """
@@ -297,8 +290,7 @@ def build_historical_features(config: dict) -> pd.DataFrame:
 
     # Clean column names (remove special chars)
     hist.columns = [
-        "".join(c if c.isalnum() else "_" for c in str(col))
-        for col in hist.columns
+        "".join(c if c.isalnum() else "_" for c in str(col)) for col in hist.columns
     ]
 
     logger.info(
@@ -309,7 +301,7 @@ def build_historical_features(config: dict) -> pd.DataFrame:
 
 
 def load_or_build_historical_features(
-    config: dict, cache_path: Optional[str] = None
+    config: dict, cache_path: str | None = None
 ) -> pd.DataFrame:
     """
     Load historical features from a cached Parquet file if it exists,
@@ -332,9 +324,7 @@ def load_or_build_historical_features(
         logger.info(f"Loading historical features from cache: {cache_path}")
         return pd.read_parquet(cache_path)
 
-    logger.info(
-        f"Cache not found at {cache_path}. Building from raw CSVs..."
-    )
+    logger.info(f"Cache not found at {cache_path}. Building from raw CSVs...")
     hist = build_historical_features(config)
     os.makedirs(os.path.dirname(cache_path), exist_ok=True)
     hist.to_parquet(cache_path)

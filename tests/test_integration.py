@@ -15,11 +15,9 @@ the new pipeline uses pre-computed historical features, which means:
 """
 
 import sys
-import os
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -79,6 +77,7 @@ class TestInferenceLatency:
         Historical features are pre-joined in the pipeline, so no CSV I/O at inference.
         """
         import time
+
         single = sample_X.iloc[:1]
         start = time.perf_counter()
         trained_pipeline.predict_proba(single)
@@ -93,6 +92,7 @@ class TestInferenceLatency:
     def test_batch_prediction_latency(self, trained_pipeline, sample_X):
         """Batch of 100 rows should complete in < 10 seconds."""
         import time
+
         batch = sample_X.iloc[:100]
         start = time.perf_counter()
         trained_pipeline.predict_proba(batch)

@@ -38,7 +38,6 @@ See train.py for the full pipeline assembly.
 import json
 import logging
 import os
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -62,8 +61,7 @@ _N_QUANTILE_BINS = 5
 def _clean_col_names(df: pd.DataFrame) -> pd.DataFrame:
     """Replace non-alphanumeric characters in column names with underscores."""
     df.columns = [
-        "".join(c if c.isalnum() else "_" for c in str(col))
-        for col in df.columns
+        "".join(c if c.isalnum() else "_" for c in str(col)) for col in df.columns
     ]
     return df
 
@@ -71,6 +69,7 @@ def _clean_col_names(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Main sklearn Transformer
 # ---------------------------------------------------------------------------
+
 
 class FullFeatureEngineering(BaseEstimator, TransformerMixin):
     """
@@ -109,7 +108,7 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
     def __init__(
         self,
         config_path: str = "config/config.yaml",
-        historical_features_df: Optional[pd.DataFrame] = None,
+        historical_features_df: pd.DataFrame | None = None,
     ) -> None:
         self.config_path = config_path
         self.historical_features_df = historical_features_df
@@ -160,22 +159,50 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
         X = X.copy()
 
         # Anomaly flags and fixes
-        days_employed = X["DAYS_EMPLOYED"] if "DAYS_EMPLOYED" in X.columns else pd.Series(np.nan, index=X.index)
-        X["DAYS_EMPLOYED_ANOMALY"] = (days_employed == _SPECIAL_DAYS_EMPLOYED_VALUE).astype(int)
-        X["DAYS_EMPLOYED"] = days_employed.replace({_SPECIAL_DAYS_EMPLOYED_VALUE: np.nan})
-        
-        own_car_age = X["OWN_CAR_AGE"] if "OWN_CAR_AGE" in X.columns else pd.Series(np.nan, index=X.index)
+        days_employed = (
+            X["DAYS_EMPLOYED"]
+            if "DAYS_EMPLOYED" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
+        X["DAYS_EMPLOYED_ANOMALY"] = (
+            days_employed == _SPECIAL_DAYS_EMPLOYED_VALUE
+        ).astype(int)
+        X["DAYS_EMPLOYED"] = days_employed.replace(
+            {_SPECIAL_DAYS_EMPLOYED_VALUE: np.nan}
+        )
+
+        own_car_age = (
+            X["OWN_CAR_AGE"]
+            if "OWN_CAR_AGE" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
         X["FLAG_OWN_CAR"] = own_car_age.notna().astype(int)
 
         # Time-based features
-        days_birth = X["DAYS_BIRTH"] if "DAYS_BIRTH" in X.columns else pd.Series(np.nan, index=X.index)
+        days_birth = (
+            X["DAYS_BIRTH"]
+            if "DAYS_BIRTH" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
         X["YEARS_BIRTH"] = days_birth / -365.0
 
         # Ratio features — guard against zero denominators
-        amt_income = X["AMT_INCOME_TOTAL"] if "AMT_INCOME_TOTAL" in X.columns else pd.Series(np.nan, index=X.index)
-        amt_credit = X["AMT_CREDIT"] if "AMT_CREDIT" in X.columns else pd.Series(np.nan, index=X.index)
-        amt_annuity = X["AMT_ANNUITY"] if "AMT_ANNUITY" in X.columns else pd.Series(np.nan, index=X.index)
-        
+        amt_income = (
+            X["AMT_INCOME_TOTAL"]
+            if "AMT_INCOME_TOTAL" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
+        amt_credit = (
+            X["AMT_CREDIT"]
+            if "AMT_CREDIT" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
+        amt_annuity = (
+            X["AMT_ANNUITY"]
+            if "AMT_ANNUITY" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
+
         income = amt_income.replace(0, np.nan)
         credit = amt_credit.replace(0, np.nan)
 
@@ -184,9 +211,21 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
         X["PAYMENT_RATE"] = amt_annuity / credit
 
         # Interaction feature — safe against missing EXT_SOURCE columns
-        src1 = X["EXT_SOURCE_1"] if "EXT_SOURCE_1" in X.columns else pd.Series(np.nan, index=X.index)
-        src2 = X["EXT_SOURCE_2"] if "EXT_SOURCE_2" in X.columns else pd.Series(np.nan, index=X.index)
-        src3 = X["EXT_SOURCE_3"] if "EXT_SOURCE_3" in X.columns else pd.Series(np.nan, index=X.index)
+        src1 = (
+            X["EXT_SOURCE_1"]
+            if "EXT_SOURCE_1" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
+        src2 = (
+            X["EXT_SOURCE_2"]
+            if "EXT_SOURCE_2" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
+        src3 = (
+            X["EXT_SOURCE_3"]
+            if "EXT_SOURCE_3" in X.columns
+            else pd.Series(np.nan, index=X.index)
+        )
         X["EXT_SOURCE_PRODUCT"] = src1 * src2 * src3
 
         return X
@@ -274,7 +313,7 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
         for col in self.main_table_features_:
             if col not in X_copy.columns:
                 X_copy[col] = np.nan
-                
+
         keep_cols = ["SK_ID_CURR"] + self.main_table_features_
         if "SK_ID_CURR" not in X_copy.columns:
             X_copy["SK_ID_CURR"] = np.nan
@@ -291,9 +330,7 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
         X_copy = _clean_col_names(X_copy)
 
         # Select final feature set
-        available_final = [
-            col for col in self.final_features_ if col in X_copy.columns
-        ]
+        available_final = [col for col in self.final_features_ if col in X_copy.columns]
         keep_final = ["SK_ID_CURR"] + available_final
         keep_final = [c for c in keep_final if c in X_copy.columns]
 
@@ -303,6 +340,7 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
 # ---------------------------------------------------------------------------
 # Preprocessor factory
 # ---------------------------------------------------------------------------
+
 
 def create_preprocessor(
     numerical_cols: list, categorical_cols: list
@@ -339,7 +377,9 @@ def create_preprocessor(
             ("imputer", SimpleImputer(strategy="most_frequent")),
             (
                 "onehot",
-                OneHotEncoder(handle_unknown="ignore", drop="first", sparse_output=False),
+                OneHotEncoder(
+                    handle_unknown="ignore", drop="first", sparse_output=False
+                ),
             ),
         ]
     )
@@ -378,8 +418,7 @@ if __name__ == "__main__":
     print(f"Stored bin edges: {list(fe.bin_edges_.keys())}")
 
     numerical_cols = [
-        c for c in df_eng.select_dtypes(include=np.number).columns
-        if c != "SK_ID_CURR"
+        c for c in df_eng.select_dtypes(include=np.number).columns if c != "SK_ID_CURR"
     ]
     categorical_cols = df_eng.select_dtypes(include="object").columns.tolist()
 

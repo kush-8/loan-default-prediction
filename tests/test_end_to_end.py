@@ -11,17 +11,13 @@ These tests require:
 Run with: pytest -m e2e
 """
 
-import json
 import os
 import sys
 import time
 from pathlib import Path
 
-import joblib
 import pandas as pd
 import pytest
-import yaml
-from sklearn.pipeline import Pipeline
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -121,6 +117,7 @@ class TestPipelineLoadAndPredict:
     def test_pipeline_roc_auc_on_sample(self, trained_pipeline, sample_X, sample_y):
         """Pipeline achieves acceptable ROC-AUC on the held-out test sample."""
         from sklearn.metrics import roc_auc_score
+
         proba = trained_pipeline.predict_proba(sample_X)[:, 1]
         auc = roc_auc_score(sample_y, proba)
         assert auc > 0.70, (

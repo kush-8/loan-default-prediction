@@ -37,7 +37,6 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 import joblib
 import lightgbm as lgb
@@ -45,8 +44,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 import yaml
-from sklearn.calibration import CalibratedClassifierCV, calibration_curve
-from sklearn.linear_model import LogisticRegression
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import (
     average_precision_score,
     brier_score_loss,
@@ -73,6 +71,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Evaluation helpers
 # ---------------------------------------------------------------------------
+
 
 def compute_metrics(y_true: np.ndarray, y_proba: np.ndarray, threshold: float) -> dict:
     """Compute a comprehensive set of classification metrics."""
@@ -150,21 +149,25 @@ def find_optimal_threshold(
         if r >= min_recall:
             recall_thresh = float(t)
             break
-    results[f"recall_geq_{int(min_recall*100)}pct"] = recall_thresh
+    results[f"recall_geq_{int(min_recall * 100)}pct"] = recall_thresh
 
     logger.info(f"Threshold candidates: {results}")
     return results
 
 
-def get_git_sha() -> Optional[str]:
+def get_git_sha() -> str | None:
     """Return the current git commit SHA, or None if not in a git repo."""
     try:
-        sha = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            stderr=subprocess.DEVNULL,
-        ).strip().decode()
+        sha = (
+            subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                stderr=subprocess.DEVNULL,
+            )
+            .strip()
+            .decode()
+        )
         return sha
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -180,6 +183,7 @@ def dataset_hash(path: str) -> str:
 # ---------------------------------------------------------------------------
 # Main training function
 # ---------------------------------------------------------------------------
+
 
 def run_training(config_path: str = "config/config.yaml") -> None:
     start_time = time.time()
@@ -245,7 +249,8 @@ def run_training(config_path: str = "config/config.yaml") -> None:
     # 5. Discover column types from training-engineered data
     # ------------------------------------------------------------------
     numerical_cols = [
-        c for c in X_train_fe.select_dtypes(include=np.number).columns
+        c
+        for c in X_train_fe.select_dtypes(include=np.number).columns
         if c != "SK_ID_CURR"
     ]
     categorical_cols = X_train_fe.select_dtypes(include="object").columns.tolist()
@@ -280,7 +285,7 @@ def run_training(config_path: str = "config/config.yaml") -> None:
     # ------------------------------------------------------------------
     preprocessor = create_preprocessor(numerical_cols, categorical_cols)
 
-    final_pipeline = Pipeline(
+    Pipeline(
         steps=[
             ("feature_engineering", fe),
             ("preprocessor", preprocessor),
@@ -357,13 +362,20 @@ def run_training(config_path: str = "config/config.yaml") -> None:
 
     # Only use calibration if it improves Brier score by > 1%
     improvement_threshold = 0.01
-    if best_cal_name != "none" and (brier_uncal - best_brier) > improvement_threshold * brier_uncal:
-        logger.info(f"Using calibration: {best_cal_name} (Brier improvement: "
-                    f"{brier_uncal - best_brier:.4f})")
+    if (
+        best_cal_name != "none"
+        and (brier_uncal - best_brier) > improvement_threshold * brier_uncal
+    ):
+        logger.info(
+            f"Using calibration: {best_cal_name} (Brier improvement: "
+            f"{brier_uncal - best_brier:.4f})"
+        )
         calibration_method = best_cal_name
         final_classifier = best_classifier
     else:
-        logger.info("Calibration did not improve Brier score meaningfully. Using uncalibrated model.")
+        logger.info(
+            "Calibration did not improve Brier score meaningfully. Using uncalibrated model."
+        )
         calibration_method = "none"
         final_classifier = classifier
 
@@ -453,9 +465,7 @@ def run_training(config_path: str = "config/config.yaml") -> None:
         "git_sha": get_git_sha(),
     }
 
-    metadata_path = os.path.join(
-        os.path.dirname(pipeline_path), "model_metadata.json"
-    )
+    metadata_path = os.path.join(os.path.dirname(pipeline_path), "model_metadata.json")
     with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=2)
     logger.info(f"Model metadata saved to {metadata_path}")

@@ -16,15 +16,13 @@ including the lifespan event (model loading). Tests that require the model
 to be loaded are skipped if the pipeline file doesn't exist.
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
-import numpy as np
 import pandas as pd
 import pytest
-import yaml
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -34,16 +32,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def client():
     """TestClient that exercises the full app lifespan (model loading)."""
     from src.api.app import app
+
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
 
 
 @pytest.fixture(scope="module")
-def valid_payload(config) -> Dict[str, Any]:
+def valid_payload(config) -> dict[str, Any]:
     """A valid minimal request body for POST /v1/predict."""
     sample_path = config["data_paths"]["test_sample"]
     if os.path.exists(sample_path):
@@ -70,6 +70,7 @@ def valid_payload(config) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Health endpoint tests
 # ---------------------------------------------------------------------------
+
 
 class TestHealthEndpoint:
     def test_health_returns_200_or_503(self, client):
@@ -108,6 +109,7 @@ class TestHealthEndpoint:
 # Prediction endpoint tests
 # ---------------------------------------------------------------------------
 
+
 class TestPredictEndpoint:
     def test_valid_request_returns_200(self, client, valid_payload):
         """A valid request must return HTTP 200."""
@@ -133,7 +135,9 @@ class TestPredictEndpoint:
         if response.status_code != 200:
             pytest.skip("Skipping — model not loaded")
         prob = response.json()["probability"]
-        assert isinstance(prob, (int, float)), f"probability is not numeric: {type(prob)}"
+        assert isinstance(prob, (int, float)), (
+            f"probability is not numeric: {type(prob)}"
+        )
         assert 0.0 <= prob <= 1.0, f"probability {prob} is outside [0, 1]"
 
     def test_response_has_predicted_class(self, client, valid_payload):
@@ -213,6 +217,4 @@ class TestInvalidInputHandling:
         """All-None payload should not cause 500 — missing values are imputed."""
         payload = {"SK_ID_CURR": 999999}  # Only ID provided
         response = client.post("/v1/predict", json=payload)
-        assert response.status_code != 500, (
-            "All-null input caused 500 Server Error"
-        )
+        assert response.status_code != 500, "All-null input caused 500 Server Error"

@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -19,6 +18,7 @@ class TestModelLoading:
     def test_pipeline_is_sklearn_pipeline(self, trained_pipeline):
         """Loaded artifact must be a sklearn Pipeline."""
         from sklearn.pipeline import Pipeline
+
         assert isinstance(trained_pipeline, Pipeline)
 
     def test_pipeline_has_required_steps(self, trained_pipeline):
@@ -69,14 +69,15 @@ class TestProbabilityConstraints:
         proba = trained_pipeline.predict_proba(sample_X)
         row_sums = proba.sum(axis=1)
         np.testing.assert_allclose(
-            row_sums, 1.0, atol=1e-6,
-            err_msg="Class probabilities do not sum to 1"
+            row_sums, 1.0, atol=1e-6, err_msg="Class probabilities do not sum to 1"
         )
 
     def test_no_nan_in_predictions(self, trained_pipeline, sample_X):
         """Predictions must not contain NaN."""
         proba = trained_pipeline.predict_proba(sample_X)[:, 1]
-        assert not np.isnan(proba).any(), f"Found {np.isnan(proba).sum()} NaN predictions"
+        assert not np.isnan(proba).any(), (
+            f"Found {np.isnan(proba).sum()} NaN predictions"
+        )
 
     def test_no_all_same_predictions(self, trained_pipeline, sample_X):
         """The model must produce varying probabilities (not all the same)."""
@@ -91,6 +92,7 @@ class TestPerformance:
     def test_roc_auc_above_baseline(self, trained_pipeline, sample_X, sample_y):
         """ROC-AUC must be above the random baseline (0.5) with margin."""
         from sklearn.metrics import roc_auc_score
+
         proba = trained_pipeline.predict_proba(sample_X)[:, 1]
         auc = roc_auc_score(sample_y, proba)
         assert auc > 0.65, (
@@ -101,11 +103,11 @@ class TestPerformance:
     def test_roc_auc_upper_bound(self, trained_pipeline, sample_X, sample_y):
         """ROC-AUC must not be suspiciously high (would indicate leakage)."""
         from sklearn.metrics import roc_auc_score
+
         proba = trained_pipeline.predict_proba(sample_X)[:, 1]
         auc = roc_auc_score(sample_y, proba)
         assert auc < 0.99, (
-            f"ROC-AUC={auc:.4f} is suspiciously high. "
-            "Check for data leakage."
+            f"ROC-AUC={auc:.4f} is suspiciously high. Check for data leakage."
         )
 
 
@@ -119,11 +121,14 @@ class TestThresholdLogic:
         assert t is not None, "No 'selected' threshold in metadata"
         assert 0.0 < t < 1.0, f"Threshold {t} is outside (0, 1)"
 
-    def test_threshold_gives_sensible_recall(self, trained_pipeline, sample_X, sample_y, model_metadata):
+    def test_threshold_gives_sensible_recall(
+        self, trained_pipeline, sample_X, sample_y, model_metadata
+    ):
         """At the selected threshold, recall should be reasonable (>= 0.3)."""
         if not model_metadata:
             pytest.skip("model_metadata.json not found")
         from sklearn.metrics import recall_score
+
         threshold = model_metadata.get("threshold", {}).get("selected", 0.5)
         proba = trained_pipeline.predict_proba(sample_X)[:, 1]
         preds = (proba >= threshold).astype(int)
@@ -140,6 +145,7 @@ class TestDeterminism:
         proba1 = trained_pipeline.predict_proba(sample_X)[:, 1]
         proba2 = trained_pipeline.predict_proba(sample_X)[:, 1]
         np.testing.assert_array_equal(
-            proba1, proba2,
-            err_msg="Predictions differ across calls — model is not deterministic"
+            proba1,
+            proba2,
+            err_msg="Predictions differ across calls — model is not deterministic",
         )

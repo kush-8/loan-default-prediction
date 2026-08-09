@@ -13,7 +13,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -95,7 +94,8 @@ class TestDataSchema:
     def test_numeric_columns_are_numeric(self, sample_data):
         """Key numeric columns must have numeric dtype."""
         non_numeric = [
-            c for c in NUMERIC_COLUMNS
+            c
+            for c in NUMERIC_COLUMNS
             if c in sample_data.columns
             and not pd.api.types.is_numeric_dtype(sample_data[c])
         ]
@@ -142,9 +142,7 @@ class TestDataConstraints:
                 continue
             vals = sample_data[col].dropna()
             out_of_range = ((vals < 0) | (vals > 1)).sum()
-            assert out_of_range == 0, (
-                f"{col} has {out_of_range} values outside [0, 1]"
-            )
+            assert out_of_range == 0, f"{col} has {out_of_range} values outside [0, 1]"
 
     def test_target_class_imbalance_documented(self, sample_data):
         """
@@ -162,7 +160,9 @@ class TestDataConstraints:
 class TestDataEdgeCases:
     def test_no_all_null_rows(self, sample_data):
         """Rows with all values null are invalid."""
-        feature_cols = [c for c in sample_data.columns if c not in ["SK_ID_CURR", "TARGET"]]
+        feature_cols = [
+            c for c in sample_data.columns if c not in ["SK_ID_CURR", "TARGET"]
+        ]
         all_null_rows = sample_data[feature_cols].isnull().all(axis=1).sum()
         assert all_null_rows == 0, f"Found {all_null_rows} rows with all-null features"
 

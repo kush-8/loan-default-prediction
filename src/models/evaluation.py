@@ -23,8 +23,7 @@ import json
 import logging
 import os
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import joblib
 import matplotlib
@@ -35,7 +34,6 @@ from sklearn.calibration import calibration_curve
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    ConfusionMatrixDisplay,
     average_precision_score,
     balanced_accuracy_score,
     brier_score_loss,
@@ -48,8 +46,6 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
-from sklearn.model_selection import StratifiedKFold, cross_validate
-from sklearn.pipeline import Pipeline
 
 matplotlib.use("Agg")  # non-interactive backend
 import matplotlib.pyplot as plt
@@ -61,12 +57,13 @@ logger = logging.getLogger(__name__)
 # Metrics
 # ---------------------------------------------------------------------------
 
+
 def full_metrics(
     y_true: np.ndarray,
     y_proba: np.ndarray,
     threshold: float = 0.5,
     label: str = "",
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Compute a comprehensive set of evaluation metrics.
 
@@ -105,18 +102,22 @@ def full_metrics(
         "true_negatives": int(tn),
         "threshold_used": threshold,
         "support_positive": int(y_true.sum()),
-        "support_total": int(len(y_true)),
+        "support_total": len(y_true),
     }
 
     if label:
         prefix = f"[{label}] "
-        logger.info(f"{prefix}ROC-AUC={metrics['roc_auc']:.4f}  "
-                    f"PR-AUC={metrics['pr_auc']:.4f}  "
-                    f"Brier={metrics['brier_score']:.4f}")
-        logger.info(f"{prefix}Precision={metrics['precision']:.4f}  "
-                    f"Recall={metrics['recall']:.4f}  "
-                    f"F1={metrics['f1']:.4f}  "
-                    f"@threshold={threshold:.3f}")
+        logger.info(
+            f"{prefix}ROC-AUC={metrics['roc_auc']:.4f}  "
+            f"PR-AUC={metrics['pr_auc']:.4f}  "
+            f"Brier={metrics['brier_score']:.4f}"
+        )
+        logger.info(
+            f"{prefix}Precision={metrics['precision']:.4f}  "
+            f"Recall={metrics['recall']:.4f}  "
+            f"F1={metrics['f1']:.4f}  "
+            f"@threshold={threshold:.3f}"
+        )
         logger.info(f"{prefix}TP={tp}  FP={fp}  FN={fn}  TN={tn}")
         logger.info(
             f"{prefix}NOTE: FP = legitimate borrowers wrongly flagged (lost revenue). "
@@ -130,10 +131,11 @@ def full_metrics(
 # Threshold analysis
 # ---------------------------------------------------------------------------
 
+
 def threshold_comparison_table(
     y_true: np.ndarray,
     y_proba: np.ndarray,
-    threshold_candidates: Dict[str, float],
+    threshold_candidates: dict[str, float],
 ) -> pd.DataFrame:
     """
     Build a comparison table across multiple threshold strategies.
@@ -171,13 +173,14 @@ def threshold_comparison_table(
 # Calibration
 # ---------------------------------------------------------------------------
 
+
 def calibration_report(
     y_true: np.ndarray,
     y_proba: np.ndarray,
     n_bins: int = 10,
     label: str = "Model",
-    save_path: Optional[str] = None,
-) -> Dict[str, Any]:
+    save_path: str | None = None,
+) -> dict[str, Any]:
     """
     Compute and optionally plot the calibration curve.
 
@@ -192,7 +195,7 @@ def calibration_report(
     brier = float(brier_score_loss(y_true, y_proba))
 
     if save_path:
-        fig, ax = plt.subplots(figsize=(7, 5))
+        _fig, ax = plt.subplots(figsize=(7, 5))
         ax.plot([0, 1], [0, 1], "k--", label="Perfect calibration", alpha=0.6)
         ax.plot(prob_pred, prob_true, "s-", label=label, color="steelblue")
         ax.set_xlabel("Mean predicted probability")
@@ -212,6 +215,7 @@ def calibration_report(
 # ROC / PR curves
 # ---------------------------------------------------------------------------
 
+
 def plot_roc_pr_curves(
     y_true: np.ndarray,
     y_proba: np.ndarray,
@@ -224,7 +228,7 @@ def plot_roc_pr_curves(
     # ROC curve
     fpr, tpr, _ = roc_curve(y_true, y_proba)
     auc = roc_auc_score(y_true, y_proba)
-    fig, ax = plt.subplots(figsize=(6, 5))
+    _fig, ax = plt.subplots(figsize=(6, 5))
     ax.plot(fpr, tpr, label=f"{label} (AUC={auc:.4f})", color="steelblue")
     ax.plot([0, 1], [0, 1], "k--", alpha=0.5)
     ax.set_xlabel("False Positive Rate")
@@ -240,10 +244,16 @@ def plot_roc_pr_curves(
     # PR curve
     precision, recall, _ = precision_recall_curve(y_true, y_proba)
     pr_auc = average_precision_score(y_true, y_proba)
-    fig, ax = plt.subplots(figsize=(6, 5))
+    _fig, ax = plt.subplots(figsize=(6, 5))
     ax.plot(recall, precision, label=f"{label} (AP={pr_auc:.4f})", color="darkorange")
     baseline = float(y_true.mean())
-    ax.axhline(baseline, color="k", linestyle="--", alpha=0.5, label=f"Baseline (={baseline:.3f})")
+    ax.axhline(
+        baseline,
+        color="k",
+        linestyle="--",
+        alpha=0.5,
+        label=f"Baseline (={baseline:.3f})",
+    )
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
     ax.set_title("Precision-Recall Curve")
@@ -259,6 +269,7 @@ def plot_roc_pr_curves(
 # ---------------------------------------------------------------------------
 # Model comparison (baseline benchmarking)
 # ---------------------------------------------------------------------------
+
 
 def benchmark_models(
     X_train: np.ndarray,
@@ -279,8 +290,9 @@ def benchmark_models(
     -------
     pd.DataFrame — comparison table
     """
-    import lightgbm as lgb
     import time
+
+    import lightgbm as lgb
 
     models = {
         "Logistic Regression": LogisticRegression(
@@ -289,9 +301,7 @@ def benchmark_models(
         "Random Forest": RandomForestClassifier(
             n_estimators=100, random_state=seed, class_weight="balanced", n_jobs=-1
         ),
-        "LightGBM": lgb.LGBMClassifier(
-            n_estimators=300, random_state=seed, verbose=-1
-        ),
+        "LightGBM": lgb.LGBMClassifier(n_estimators=300, random_state=seed, verbose=-1),
     }
 
     rows = []
@@ -368,6 +378,8 @@ if __name__ == "__main__":
     metrics = full_metrics(y_sample, proba, threshold=threshold, label="Sample eval")
 
     os.makedirs("reports", exist_ok=True)
-    calibration_report(y_sample, proba, label="LightGBM", save_path="reports/calibration_curve.png")
+    calibration_report(
+        y_sample, proba, label="LightGBM", save_path="reports/calibration_curve.png"
+    )
     plot_roc_pr_curves(y_sample, proba, save_dir="reports")
     logger.info("Evaluation complete. Plots saved to reports/")

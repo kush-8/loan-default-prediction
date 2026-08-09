@@ -15,11 +15,9 @@ Run
     python src/explain.py
 """
 
-import json
 import logging
 import os
 import sys
-from typing import Optional
 
 import joblib
 import matplotlib
@@ -82,6 +80,7 @@ def _readable_feature_names(raw_names) -> list:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def generate_explanations(config_path: str = "config/config.yaml") -> None:
     logger.info("--- Generating model explanations ---")
 
@@ -108,7 +107,7 @@ def generate_explanations(config_path: str = "config/config.yaml") -> None:
         train_path = config["data_paths"]["application_train"]
         df = pd.read_csv(train_path)
         X_sample = df.drop(columns=["TARGET"]).sample(n=200, random_state=42)
-        logger.info(f"Using application_train.csv sample: 200 rows")
+        logger.info("Using application_train.csv sample: 200 rows")
 
     # Extract pipeline steps
     fe = pipeline.named_steps.get("feature_engineering")
@@ -116,7 +115,9 @@ def generate_explanations(config_path: str = "config/config.yaml") -> None:
     classifier = pipeline.named_steps.get("classifier")
 
     if any(s is None for s in [fe, preprocessor, classifier]):
-        logger.error("Pipeline steps not found (expected: feature_engineering, preprocessor, classifier).")
+        logger.error(
+            "Pipeline steps not found (expected: feature_engineering, preprocessor, classifier)."
+        )
         return
 
     # Transform sample
@@ -149,9 +150,12 @@ def generate_explanations(config_path: str = "config/config.yaml") -> None:
     logger.info("Saving global SHAP summary plot...")
     plt.figure(figsize=(10, 8))
     shap.summary_plot(shap_values, X_pp_df, show=False, max_display=20)
-    plt.title("Global Feature Importance (SHAP)\n"
-               "Each point = one sample. Color = feature value. "
-               "x-axis = impact on default probability.", fontsize=9)
+    plt.title(
+        "Global Feature Importance (SHAP)\n"
+        "Each point = one sample. Color = feature value. "
+        "x-axis = impact on default probability.",
+        fontsize=9,
+    )
     plt.tight_layout()
     plt.savefig("reports/shap_summary_plot.png", dpi=150, bbox_inches="tight")
     plt.close()
@@ -182,7 +186,7 @@ def generate_explanations(config_path: str = "config/config.yaml") -> None:
         )
         shap.save_html("reports/shap_force_plot_single.html", force_plot_html)
         logger.info("Saved: reports/shap_force_plot_single.html")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning(f"Force plot failed (harmless): {exc}")
 
     # ------------------------------------------------------------------
@@ -208,9 +212,11 @@ def generate_explanations(config_path: str = "config/config.yaml") -> None:
     text_example = (
         f"=== Local Prediction Explanation (Sample 0) ===\n"
         f"Risk score: {proba_sample * 100:.1f}%\n\n"
-        f"Main factors INCREASING default risk:\n" + "\n".join(risk_lines) +
-        f"\n\nMain factors REDUCING default risk:\n" + "\n".join(protect_lines) +
-        "\n\n[Note: This is a model explanation, not a causal or legal determination.]"
+        f"Main factors INCREASING default risk:\n"
+        + "\n".join(risk_lines)
+        + "\n\nMain factors REDUCING default risk:\n"
+        + "\n".join(protect_lines)
+        + "\n\n[Note: This is a model explanation, not a causal or legal determination.]"
     )
     print(text_example)
 

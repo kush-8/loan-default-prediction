@@ -25,22 +25,18 @@ Run
     uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
 """
 
-import json
 import logging
-import os
 import time
 from contextlib import asynccontextmanager
-from typing import Any, Dict, Optional
+from typing import Any
 
-import joblib
-import numpy as np
 import pandas as pd
-import yaml
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
-from .api_schema import LoanApplication
 from src.models.predict import ModelRegistry
+
+from .api_schema import LoanApplication
 
 logger = logging.getLogger("loan_api")
 logging.basicConfig(
@@ -52,6 +48,7 @@ logging.basicConfig(
 # Startup / shutdown lifecycle
 # ---------------------------------------------------------------------------
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load model artifacts once at startup; release at shutdown."""
@@ -62,7 +59,7 @@ async def lifespan(app: FastAPI):
         logger.info(
             f"Model loaded successfully. Version: {registry.metadata.get('model_version', 'unknown')}"
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.error(f"Failed to load model pipeline: {exc}")
         app.state.registry = None
 
@@ -93,6 +90,7 @@ app = FastAPI(
 # Middleware: request logging
 # ---------------------------------------------------------------------------
 
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
@@ -109,15 +107,16 @@ async def log_requests(request: Request, call_next):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.get("/health", tags=["Ops"])
-def health_check() -> Dict[str, Any]:
+def health_check() -> dict[str, Any]:
     """
     Liveness and readiness check.
 
     Returns HTTP 200 with model status when the model is loaded,
     or HTTP 503 if the model failed to load at startup.
     """
-    registry: Optional[ModelRegistry] = getattr(app.state, "registry", None)
+    registry: ModelRegistry | None = getattr(app.state, "registry", None)
 
     if registry is None:
         raise HTTPException(
@@ -128,7 +127,9 @@ def health_check() -> Dict[str, Any]:
     return {
         "status": "healthy",
         "model_version": registry.metadata.get("model_version", "unknown"),
-        "calibration": registry.metadata.get("model", {}).get("calibration_method", "none"),
+        "calibration": registry.metadata.get("model", {}).get(
+            "calibration_method", "none"
+        ),
         "threshold": registry.threshold,
     }
 
@@ -136,11 +137,14 @@ def health_check() -> Dict[str, Any]:
 @app.get("/", tags=["Ops"], include_in_schema=False)
 def root():
     """Legacy root endpoint — redirects semantics to /health."""
-    return {"status": "ok", "message": "Loan Default Prediction API. See /docs for usage."}
+    return {
+        "status": "ok",
+        "message": "Loan Default Prediction API. See /docs for usage.",
+    }
 
 
 @app.post("/v1/predict", tags=["Prediction"])
-def predict_v1(application_data: LoanApplication) -> Dict[str, Any]:
+def predict_v1(application_data: LoanApplication) -> dict[str, Any]:
     """
     Predict default probability for a single loan applicant.
 
@@ -158,7 +162,7 @@ def predict_v1(application_data: LoanApplication) -> Dict[str, Any]:
     - ``1`` = high default risk → recommend further review or decline
     - ``0`` = lower default risk → eligible for standard processing
     """
-    registry: Optional[ModelRegistry] = getattr(app.state, "registry", None)
+    registry: ModelRegistry | None = getattr(app.state, "registry", None)
     if registry is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -169,14 +173,13 @@ def predict_v1(application_data: LoanApplication) -> Dict[str, Any]:
         input_dict = application_data.model_dump(exclude_unset=True)
         if not input_dict:
             raise ValueError("Empty request body or all-null fields")
-            
+
         # Convert enum values to their string representation
         input_dict = {
-            k: (v.value if hasattr(v, "value") else v)
-            for k, v in input_dict.items()
+            k: (v.value if hasattr(v, "value") else v) for k, v in input_dict.items()
         }
         input_df = pd.DataFrame([input_dict])
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Failed to parse input: {exc}",
@@ -184,8 +187,8 @@ def predict_v1(application_data: LoanApplication) -> Dict[str, Any]:
 
     try:
         result = registry.predict(input_df, explain=True)
-    except Exception as exc:
-        logger.exception(f"Prediction failed: {exc}")
+    except Exception:
+        logger.exception("Prediction failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Prediction failed. Please check the input format and try again.",
@@ -197,6 +200,7 @@ def predict_v1(application_data: LoanApplication) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Global exception handlers
 # ---------------------------------------------------------------------------
+
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):

@@ -17,8 +17,7 @@ import json
 import logging
 import os
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import joblib
 import numpy as np
@@ -32,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Human-readable feature name mapping
 # ---------------------------------------------------------------------------
 
-_FEATURE_DISPLAY_NAMES: Dict[str, str] = {
+_FEATURE_DISPLAY_NAMES: dict[str, str] = {
     "PAYMENT_RATE": "annuity-to-credit ratio (payment rate)",
     "EXT_SOURCE_2": "external credit score 2",
     "EXT_SOURCE_3": "external credit score 3",
@@ -77,11 +76,12 @@ def _readable_name(raw_name: str) -> str:
 # SHAP-based local explanation
 # ---------------------------------------------------------------------------
 
+
 def _local_explanation(
     pipeline,
     input_df: pd.DataFrame,
     top_n: int = 5,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Compute a SHAP-based local explanation for a single prediction.
 
@@ -105,11 +105,15 @@ def _local_explanation(
         # Transform the input
         input_eng = fe.transform(input_df)
         drop_cols = [c for c in ["SK_ID_CURR"] if c in input_eng.columns]
-        input_pp = preprocessor.transform(input_eng.drop(columns=drop_cols, errors="ignore"))
+        input_pp = preprocessor.transform(
+            input_eng.drop(columns=drop_cols, errors="ignore")
+        )
         feature_names = preprocessor.get_feature_names_out()
 
         explainer = shap.TreeExplainer(
-            classifier if not hasattr(classifier, "base_estimator") else classifier.base_estimator,
+            classifier
+            if not hasattr(classifier, "base_estimator")
+            else classifier.base_estimator,
             feature_perturbation="interventional",
         )
         shap_values = explainer.shap_values(input_pp)
@@ -127,14 +131,28 @@ def _local_explanation(
         for idx in indices:
             if len(risk_factors) >= top_n and len(protective_factors) >= top_n:
                 break
-            feat_name = feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+            feat_name = (
+                feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
+            )
             shap_val = float(sv[idx])
             label = _readable_name(feat_name)
 
             if shap_val > 0 and len(risk_factors) < top_n:
-                risk_factors.append({"feature": feat_name, "label": label, "shap_value": round(shap_val, 4)})
+                risk_factors.append(
+                    {
+                        "feature": feat_name,
+                        "label": label,
+                        "shap_value": round(shap_val, 4),
+                    }
+                )
             elif shap_val < 0 and len(protective_factors) < top_n:
-                protective_factors.append({"feature": feat_name, "label": label, "shap_value": round(shap_val, 4)})
+                protective_factors.append(
+                    {
+                        "feature": feat_name,
+                        "label": label,
+                        "shap_value": round(shap_val, 4),
+                    }
+                )
 
         risk_lines = "\n".join(f"  • {f['label']}" for f in risk_factors)
         protect_lines = "\n".join(f"  • {f['label']}" for f in protective_factors)
@@ -150,7 +168,7 @@ def _local_explanation(
             "text_summary": text_summary,
         }
 
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning(f"SHAP explanation skipped: {exc}")
         return {}
 
@@ -158,6 +176,7 @@ def _local_explanation(
 # ---------------------------------------------------------------------------
 # ModelRegistry — loads once, reused per request
 # ---------------------------------------------------------------------------
+
 
 class ModelRegistry:
     """
@@ -167,7 +186,7 @@ class ModelRegistry:
     shared across all requests via app.state.registry.
     """
 
-    def __init__(self, pipeline, metadata: Dict[str, Any]) -> None:
+    def __init__(self, pipeline, metadata: dict[str, Any]) -> None:
         self.pipeline = pipeline
         self.metadata = metadata
         self.threshold: float = metadata.get("threshold", {}).get("selected", 0.5)
@@ -200,9 +219,7 @@ class ModelRegistry:
                 f"Metadata loaded. Version: {metadata.get('model_version', 'unknown')}"
             )
         else:
-            logger.warning(
-                f"No metadata file at {metadata_path}. Using defaults."
-            )
+            logger.warning(f"No metadata file at {metadata_path}. Using defaults.")
             metadata = {}
 
         return cls(pipeline=pipeline, metadata=metadata)
@@ -210,9 +227,9 @@ class ModelRegistry:
     def predict(
         self,
         input_df: pd.DataFrame,
-        threshold: Optional[float] = None,
+        threshold: float | None = None,
         explain: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Make a prediction for a DataFrame with one or more rows.
 
@@ -234,8 +251,12 @@ class ModelRegistry:
         probabilities = self.pipeline.predict_proba(input_df)[:, 1]
 
         results = {
-            "probability": float(round(probabilities[0], 6)) if len(probabilities) == 1 else [float(round(p, 6)) for p in probabilities],
-            "predicted_class": int(probabilities[0] >= t) if len(probabilities) == 1 else [int(p >= t) for p in probabilities],
+            "probability": float(round(probabilities[0], 6))
+            if len(probabilities) == 1
+            else [float(round(p, 6)) for p in probabilities],
+            "predicted_class": int(probabilities[0] >= t)
+            if len(probabilities) == 1
+            else [int(p >= t) for p in probabilities],
             "threshold": float(t),
             "model_version": self.model_version,
         }
@@ -250,6 +271,7 @@ class ModelRegistry:
 # ---------------------------------------------------------------------------
 # Standalone batch prediction
 # ---------------------------------------------------------------------------
+
 
 def run_batch_prediction(config_path: str = "config/config.yaml") -> None:
     """Run predictions on application_test.csv and save results."""
@@ -272,9 +294,11 @@ def run_batch_prediction(config_path: str = "config/config.yaml") -> None:
     out_path = config["data_paths"]["test_result"]
     result_df.to_csv(out_path, index=False)
     logger.info(f"Saved {len(result_df):,} predictions to {out_path}")
-    logger.info(f"Prediction distribution: mean={probabilities.mean():.4f}  "
-                f"p50={np.median(probabilities):.4f}  "
-                f"p90={np.percentile(probabilities, 90):.4f}")
+    logger.info(
+        f"Prediction distribution: mean={probabilities.mean():.4f}  "
+        f"p50={np.median(probabilities):.4f}  "
+        f"p90={np.percentile(probabilities, 90):.4f}"
+    )
 
 
 if __name__ == "__main__":

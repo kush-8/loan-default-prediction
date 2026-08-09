@@ -11,7 +11,6 @@ Tests for FullFeatureEngineering focusing on:
 """
 
 import sys
-import os
 from pathlib import Path
 
 import numpy as np
@@ -21,10 +20,10 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.models.preprocessing import FullFeatureEngineering
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_two_groups(n_train: int = 100, n_test: int = 30, seed: int = 0) -> tuple:
     """
@@ -47,7 +46,9 @@ def _make_two_groups(n_train: int = 100, n_test: int = 30, seed: int = 0) -> tup
                 "DAYS_REGISTRATION": rng.integers(-10_000, 0, n).astype(float),
                 "DAYS_ID_PUBLISH": rng.integers(-5_000, 0, n),
                 "DAYS_LAST_PHONE_CHANGE": rng.integers(-2_000, 0, n).astype(float),
-                "OWN_CAR_AGE": np.where(rng.random(n) < 0.5, np.nan, rng.integers(1, 20, n)),
+                "OWN_CAR_AGE": np.where(
+                    rng.random(n) < 0.5, np.nan, rng.integers(1, 20, n)
+                ),
                 "EXT_SOURCE_1": rng.uniform(0, 1, n),
                 "EXT_SOURCE_2": rng.uniform(0, 1, n),
                 "EXT_SOURCE_3": rng.uniform(0, 1, n),
@@ -57,13 +58,23 @@ def _make_two_groups(n_train: int = 100, n_test: int = 30, seed: int = 0) -> tup
                 "AMT_REQ_CREDIT_BUREAU_YEAR": rng.integers(0, 5, n).astype(float),
                 "CODE_GENDER": rng.choice(["M", "F"], n),
                 "NAME_CONTRACT_TYPE": rng.choice(["Cash loans", "Revolving loans"], n),
-                "NAME_INCOME_TYPE": rng.choice(["Working", "State servant", "Commercial associate"], n),
-                "NAME_EDUCATION_TYPE": rng.choice(["Higher education", "Secondary / secondary special"], n),
-                "NAME_FAMILY_STATUS": rng.choice(["Married", "Single / not married"], n),
-                "NAME_HOUSING_TYPE": rng.choice(["House / apartment", "Rented apartment"], n),
+                "NAME_INCOME_TYPE": rng.choice(
+                    ["Working", "State servant", "Commercial associate"], n
+                ),
+                "NAME_EDUCATION_TYPE": rng.choice(
+                    ["Higher education", "Secondary / secondary special"], n
+                ),
+                "NAME_FAMILY_STATUS": rng.choice(
+                    ["Married", "Single / not married"], n
+                ),
+                "NAME_HOUSING_TYPE": rng.choice(
+                    ["House / apartment", "Rented apartment"], n
+                ),
                 "REGION_RATING_CLIENT": rng.integers(1, 4, n),
                 "REGION_RATING_CLIENT_W_CITY": rng.integers(1, 4, n),
-                "WEEKDAY_APPR_PROCESS_START": rng.choice(["MONDAY", "TUESDAY", "WEDNESDAY"], n),
+                "WEEKDAY_APPR_PROCESS_START": rng.choice(
+                    ["MONDAY", "TUESDAY", "WEDNESDAY"], n
+                ),
                 "HOUR_APPR_PROCESS_START": rng.integers(8, 20, n),
                 "CNT_CHILDREN": rng.integers(0, 4, n),
                 "CNT_FAM_MEMBERS": rng.integers(1, 6, n).astype(float),
@@ -83,7 +94,6 @@ def _make_two_groups(n_train: int = 100, n_test: int = 30, seed: int = 0) -> tup
                 "YEARS_BEGINEXPLUATATION_AVG": rng.uniform(0, 1, n),
                 "YEARS_BEGINEXPLUATATION_MODE": rng.uniform(0, 1, n),
                 "YEARS_BEGINEXPLUATATION_MEDI": rng.uniform(0, 1, n),
-                "HOUR_APPR_PROCESS_START": rng.integers(8, 20, n),
                 "AMT_REQ_CREDIT_BUREAU_WEEK": rng.integers(0, 2, n).astype(float),
             }
         )
@@ -109,6 +119,7 @@ def _make_fe_no_history(config_path="config/config.yaml") -> FullFeatureEngineer
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestFitTransformContract:
     def test_transform_raises_before_fit(self):
@@ -151,20 +162,18 @@ class TestLeakagePrevention:
         fe.fit(train_df)
 
         # Record edges immediately after fit
-        edges_after_fit = {
-            k: v.copy() for k, v in fe.bin_edges_.items()
-        }
+        edges_after_fit = {k: v.copy() for k, v in fe.bin_edges_.items()}
 
         # Transform test data (which has very different income distribution)
         fe.transform(test_df)
 
         # Edges must not have changed
-        for key in edges_after_fit:
+        for key, expected_val in edges_after_fit.items():
             np.testing.assert_array_equal(
                 fe.bin_edges_[key],
-                edges_after_fit[key],
+                expected_val,
                 err_msg=f"Bin edges for {key} were mutated during transform(). "
-                        "This is a data leakage bug.",
+                "This is a data leakage bug.",
             )
 
     def test_train_test_bins_differ_for_different_distributions(self):
@@ -177,16 +186,16 @@ class TestLeakagePrevention:
 
         # Fit on train
         fe_train = _make_fe_no_history()
-        out_train = fe_train.fit_transform(train_df)
+        fe_train.fit_transform(train_df)
 
         # Fit separately on test (wrong approach — just for comparison)
         fe_test = _make_fe_no_history()
-        out_test_wrong = fe_test.fit_transform(test_df)
+        fe_test.fit_transform(test_df)
 
         # Correct approach: use train's fitted FE on test data
         fe_train2 = _make_fe_no_history()
         fe_train2.fit(train_df)
-        out_test_correct = fe_train2.transform(test_df)
+        fe_train2.transform(test_df)
 
         # The correct output should differ from the "wrongly refitted" output
         # (They happen to have different row counts so we just check edges differ)
@@ -234,8 +243,9 @@ class TestEdgeCases:
         zero_income_df.iloc[0, zero_income_df.columns.get_loc("AMT_INCOME_TOTAL")] = 0.0
         result = fe.transform(zero_income_df)
 
-        assert not result.isin([np.inf, -np.inf]).any().any(), \
+        assert not result.isin([np.inf, -np.inf]).any().any(), (
             "Infinite values found after transform with zero income"
+        )
 
     def test_days_employed_anomaly_handled(self):
         """Sentinel value 365243 in DAYS_EMPLOYED should be replaced with NaN."""
@@ -268,7 +278,12 @@ class TestEdgeCases:
         fe = _make_fe_no_history()
         fe.fit(train_df)
         result = fe.transform(test_df)
-        assert not result.select_dtypes(include=np.number).isin([np.inf, -np.inf]).any().any()
+        assert (
+            not result.select_dtypes(include=np.number)
+            .isin([np.inf, -np.inf])
+            .any()
+            .any()
+        )
 
 
 class TestOutputSchema:

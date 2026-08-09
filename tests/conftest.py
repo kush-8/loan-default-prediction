@@ -14,12 +14,10 @@ The conftest sets up sys.path so all src.* imports resolve correctly.
 """
 
 import json
-import sys
 import os
+import sys
 from pathlib import Path
-from typing import Dict
 
-import numpy as np
 import pandas as pd
 import pytest
 import yaml
@@ -32,6 +30,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def project_root() -> Path:
@@ -49,6 +48,7 @@ def config(project_root: Path) -> dict:
 # ---------------------------------------------------------------------------
 # Sample data
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def sample_data(config: dict) -> pd.DataFrame:
@@ -73,8 +73,9 @@ def sample_y(sample_data: pd.DataFrame) -> pd.Series:
 # Minimal synthetic row (no file I/O required)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
-def minimal_valid_row() -> Dict:
+def minimal_valid_row() -> dict:
     """
     A minimal application-table row with enough fields to exercise
     the feature engineering without requiring historical data files.
@@ -132,7 +133,7 @@ def minimal_valid_row() -> Dict:
 
 
 @pytest.fixture(scope="session")
-def minimal_valid_df(minimal_valid_row: Dict) -> pd.DataFrame:
+def minimal_valid_df(minimal_valid_row: dict) -> pd.DataFrame:
     """Single-row DataFrame from the minimal valid row dict."""
     return pd.DataFrame([minimal_valid_row])
 
@@ -141,6 +142,7 @@ def minimal_valid_df(minimal_valid_row: Dict) -> pd.DataFrame:
 # Model pipeline (optional — skipped if not found)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
 def trained_pipeline(config: dict):
     """
@@ -148,6 +150,7 @@ def trained_pipeline(config: dict):
     Tests that require this fixture are skipped if the file doesn't exist.
     """
     import joblib
+
     path = config["model_assets"]["pipeline_path"]
     if not os.path.exists(path):
         pytest.skip(f"Trained pipeline not found at {path}. Run train.py first.")
@@ -158,6 +161,7 @@ def trained_pipeline(config: dict):
 def model_metadata(config: dict) -> dict:
     """Load model metadata JSON (optional)."""
     import os
+
     pipeline_dir = os.path.dirname(config["model_assets"]["pipeline_path"])
     meta_path = os.path.join(pipeline_dir, "model_metadata.json")
     if os.path.exists(meta_path):
