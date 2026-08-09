@@ -58,6 +58,7 @@ jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.3
 jupyterlab_widgets==3.0.15
 kaggle==1.7.4.5
+kagglehub
 kiwisolver==1.4.9
 lark==1.2.2
 lightgbm==4.6.0
@@ -142,3 +143,4 @@ webencodings==0.5.1
 websocket-client==1.8.0
 websockets==15.0.1
 widgetsnbextension==4.0.14
+pyarrow

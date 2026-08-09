@@ -19,10 +19,12 @@ scripts/
 .vscode/
 .idea/
 
-# Large data and result files
-# Exclude all raw data except the two files needed for the API
-data/raw/*
-!data/raw/application_train.csv
-!data/raw/HomeCredit_columns_description.csv
-data/processed/
+# All raw data files — the inference API does NOT need training data
+data/
+
+# Result files
+results.csv
 submission.csv
+
+# Test files
+tests/

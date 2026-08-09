@@ -1,13 +1,56 @@
 # Virtual Environments
 venv/
 .venv/
+env/
 
 # Python Cache
 __pycache__/
+**/__pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# Data Files
-data/raw
-data/processed/application_train_cleaned.csv
-data/processed/application_train_engineered.csv
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment variables (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Data Files — raw data is large and must be downloaded separately
+data/raw/
+# Processed data except the small test sample (committed for CI)
+data/processed/
+!data/processed/test_sample.csv
+
+# Model artifacts — tracked via DVC or manually
+# Uncomment if you want to track models in git (not recommended for large files)
+# models/
+
+# Reports (generated files)
+reports/*.png
+reports/*.html
+reports/*.txt
+# Keep the experiment report document
+!reports/experiment_report.md
+
+# Result files
+results.csv
+submission.csv
+
+# Kaggle credentials (NEVER commit)
+kaggle.json
+~/.kaggle/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/

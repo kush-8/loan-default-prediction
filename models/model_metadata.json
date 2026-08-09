@@ -1,0 +1,83 @@
+{
+  "model_version": "1.1.0",
+  "training_timestamp": "2026-08-09T15:03:49.940261+00:00",
+  "training_duration_seconds": 67.4,
+  "dataset": {
+    "path": "data/raw/application_train.csv",
+    "hash_md5_first10mb": "b06983c0549b1554798098420f3cb205",
+    "n_rows": 307511,
+    "n_features_raw": 122
+  },
+  "split_strategy": {
+    "train_fraction": 0.7,
+    "val_fraction": 0.15,
+    "test_fraction": 0.15,
+    "stratified": true,
+    "random_seed": 42
+  },
+  "feature_engineering": {
+    "version": "1.1.0",
+    "bin_cols": [
+      "INCOME_QUANTILE_BINS",
+      "CREDIT_QUANTILE_BINS",
+      "GOODS_PRICE_QUANTILE_BINS",
+      "ANNUITY_QUANTILE_BINS"
+    ],
+    "n_final_features": 250
+  },
+  "model": {
+    "type": "LGBMClassifier",
+    "hyperparameters": {
+      "n_estimators": 766,
+      "learning_rate": 0.14661696258280738,
+      "max_depth": 15,
+      "num_leaves": 24,
+      "min_data_in_leaf": 51,
+      "feature_fraction": 0.9287838567079353,
+      "bagging_fraction": 0.9495916039524935,
+      "bagging_freq": 4,
+      "reg_alpha": 1.1168937615210697,
+      "reg_lambda": 0.10128872382319574,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "calibration_method": "none"
+  },
+  "threshold": {
+    "selected": 0.14788944723618092,
+    "strategy": "f1_optimal_on_val",
+    "all_candidates": {
+      "default": 0.5,
+      "f1_optimal": 0.14788944723618092,
+      "cost_optimal": 0.1577386934673367,
+      "recall_geq_60pct": 0.09864321608040201
+    }
+  },
+  "validation_metrics": {
+    "roc_auc": 0.7721096330227937,
+    "pr_auc": 0.2618755022822356,
+    "brier_score": 0.06694729863712531,
+    "log_loss": 0.24190913065034145,
+    "precision": 0.2502631974733043,
+    "recall": 0.44683136412459723,
+    "f1": 0.3208329316494746,
+    "threshold_used": 0.14788944723618092
+  },
+  "test_metrics": {
+    "roc_auc": 0.7719704450617855,
+    "pr_auc": 0.25612782529729017,
+    "brier_score": 0.06714460139645069,
+    "log_loss": 0.24238504385235624,
+    "precision": 0.25647236941710827,
+    "recall": 0.4548872180451128,
+    "f1": 0.32800851970181044,
+    "threshold_used": 0.14788944723618092
+  },
+  "environment": {
+    "python_version": "3.12.1",
+    "sklearn_version": "1.7.1",
+    "lightgbm_version": "4.6.0",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "git_sha": "f87cab6"
+}
