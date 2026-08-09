@@ -20,10 +20,6 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path so joblib can unpickle src.models.preprocessing
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
 import joblib
 import matplotlib
 import numpy as np
@@ -32,7 +28,11 @@ import shap
 import yaml
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402
+
+# Add project root to path so joblib can unpickle src.models.preprocessing
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 logger = logging.getLogger(__name__)
 

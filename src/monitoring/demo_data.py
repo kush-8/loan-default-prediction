@@ -123,7 +123,7 @@ def generate_feature_drift_report(features: list[str] | None = None) -> dict[str
     rng.shuffle(psi_values)
 
     report = {}
-    for feat, psi in zip(features, psi_values):
+    for feat, psi in zip(features, psi_values, strict=False):
         psi = float(psi)
         ks = float(np.clip(psi * rng.uniform(0.5, 1.5), 0, 1))
         ws = float(np.abs(rng.normal(0, psi * 2)))

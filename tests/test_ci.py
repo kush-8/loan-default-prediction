@@ -25,14 +25,14 @@ class TestAPIStartup:
         try:
             pass
         except Exception as exc:  # noqa: BLE001
-            assert False, f"src.app import failed: {exc}"
+            raise AssertionError(f"src.app import failed: {exc}")
 
     def test_api_schema_imports_without_error(self):
         """The API schema module must be importable."""
         try:
             pass
         except Exception as exc:  # noqa: BLE001
-            assert False, f"src.api_schema import failed: {exc}"
+            raise AssertionError(f"src.api_schema import failed: {exc}")
 
     def test_loan_application_model_is_pydantic(self):
         """LoanApplication must be a Pydantic model class."""
