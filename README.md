@@ -1,5 +1,7 @@
 # Loan Default Risk Prediction
 
+> **Live Demo**: [https://loan-default-prediction-znxthnsh6eaf392b45ukvd.streamlit.app/](https://loan-default-prediction-znxthnsh6eaf392b45ukvd.streamlit.app/)
+>
 > **Disclaimer**: This is a machine learning engineering portfolio project, not a production
 > credit-decisioning system. It uses the publicly available Home Credit Default Risk dataset
 > (Kaggle, 2018) for demonstration purposes only.
