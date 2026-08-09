@@ -46,9 +46,7 @@ def _make_two_groups(n_train: int = 100, n_test: int = 30, seed: int = 0) -> tup
                 "DAYS_REGISTRATION": rng.integers(-10_000, 0, n).astype(float),
                 "DAYS_ID_PUBLISH": rng.integers(-5_000, 0, n),
                 "DAYS_LAST_PHONE_CHANGE": rng.integers(-2_000, 0, n).astype(float),
-                "OWN_CAR_AGE": np.where(
-                    rng.random(n) < 0.5, np.nan, rng.integers(1, 20, n)
-                ),
+                "OWN_CAR_AGE": np.where(rng.random(n) < 0.5, np.nan, rng.integers(1, 20, n)),
                 "EXT_SOURCE_1": rng.uniform(0, 1, n),
                 "EXT_SOURCE_2": rng.uniform(0, 1, n),
                 "EXT_SOURCE_3": rng.uniform(0, 1, n),
@@ -64,17 +62,11 @@ def _make_two_groups(n_train: int = 100, n_test: int = 30, seed: int = 0) -> tup
                 "NAME_EDUCATION_TYPE": rng.choice(
                     ["Higher education", "Secondary / secondary special"], n
                 ),
-                "NAME_FAMILY_STATUS": rng.choice(
-                    ["Married", "Single / not married"], n
-                ),
-                "NAME_HOUSING_TYPE": rng.choice(
-                    ["House / apartment", "Rented apartment"], n
-                ),
+                "NAME_FAMILY_STATUS": rng.choice(["Married", "Single / not married"], n),
+                "NAME_HOUSING_TYPE": rng.choice(["House / apartment", "Rented apartment"], n),
                 "REGION_RATING_CLIENT": rng.integers(1, 4, n),
                 "REGION_RATING_CLIENT_W_CITY": rng.integers(1, 4, n),
-                "WEEKDAY_APPR_PROCESS_START": rng.choice(
-                    ["MONDAY", "TUESDAY", "WEDNESDAY"], n
-                ),
+                "WEEKDAY_APPR_PROCESS_START": rng.choice(["MONDAY", "TUESDAY", "WEDNESDAY"], n),
                 "HOUR_APPR_PROCESS_START": rng.integers(8, 20, n),
                 "CNT_CHILDREN": rng.integers(0, 4, n),
                 "CNT_FAM_MEMBERS": rng.integers(1, 6, n).astype(float),
@@ -243,9 +235,9 @@ class TestEdgeCases:
         zero_income_df.iloc[0, zero_income_df.columns.get_loc("AMT_INCOME_TOTAL")] = 0.0
         result = fe.transform(zero_income_df)
 
-        assert not result.isin([np.inf, -np.inf]).any().any(), (
-            "Infinite values found after transform with zero income"
-        )
+        assert (
+            not result.isin([np.inf, -np.inf]).any().any()
+        ), "Infinite values found after transform with zero income"
 
     def test_days_employed_anomaly_handled(self):
         """Sentinel value 365243 in DAYS_EMPLOYED should be replaced with NaN."""
@@ -278,12 +270,7 @@ class TestEdgeCases:
         fe = _make_fe_no_history()
         fe.fit(train_df)
         result = fe.transform(test_df)
-        assert (
-            not result.select_dtypes(include=np.number)
-            .isin([np.inf, -np.inf])
-            .any()
-            .any()
-        )
+        assert not result.select_dtypes(include=np.number).isin([np.inf, -np.inf]).any().any()
 
 
 class TestOutputSchema:

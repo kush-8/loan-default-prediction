@@ -79,9 +79,7 @@ class TestHealthEndpoint:
         Both are acceptable — 503 means the model file was not present.
         """
         response = client.get("/health")
-        assert response.status_code in (200, 503), (
-            f"Unexpected status code: {response.status_code}"
-        )
+        assert response.status_code in (200, 503), f"Unexpected status code: {response.status_code}"
 
     def test_health_response_has_status_field(self, client):
         """Response body must contain a 'status' or 'detail' field."""
@@ -117,9 +115,9 @@ class TestPredictEndpoint:
         # If model not loaded, will be 503 — skip in that case
         if response.status_code == 503:
             pytest.skip("Model not loaded — skipping prediction tests")
-        assert response.status_code == 200, (
-            f"Expected 200, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Expected 200, got {response.status_code}: {response.text}"
 
     def test_valid_request_has_probability_field(self, client, valid_payload):
         """Response must contain 'probability' field."""
@@ -135,9 +133,7 @@ class TestPredictEndpoint:
         if response.status_code != 200:
             pytest.skip("Skipping — model not loaded")
         prob = response.json()["probability"]
-        assert isinstance(prob, (int, float)), (
-            f"probability is not numeric: {type(prob)}"
-        )
+        assert isinstance(prob, (int, float)), f"probability is not numeric: {type(prob)}"
         assert 0.0 <= prob <= 1.0, f"probability {prob} is outside [0, 1]"
 
     def test_response_has_predicted_class(self, client, valid_payload):
@@ -186,9 +182,11 @@ class TestInvalidInputHandling:
             data="not json",
             headers={"Content-Type": "text/plain"},
         )
-        assert response.status_code in (400, 415, 422), (
-            f"Expected 4xx error for wrong content-type, got {response.status_code}"
-        )
+        assert response.status_code in (
+            400,
+            415,
+            422,
+        ), f"Expected 4xx error for wrong content-type, got {response.status_code}"
 
     def test_invalid_categorical_value_handled(self, client, valid_payload):
         """
@@ -198,20 +196,21 @@ class TestInvalidInputHandling:
         bad_payload = {**valid_payload, "CODE_GENDER": "INVALID_VALUE_XYZ"}
         response = client.post("/v1/predict", json=bad_payload)
         # FastAPI/Pydantic will reject the invalid enum with 422
-        assert response.status_code in (200, 422), (
-            f"Unexpected status {response.status_code} for invalid enum value"
-        )
-        assert response.status_code != 500, (
-            "Invalid enum value caused 500 Server Error — should be 422"
-        )
+        assert response.status_code in (
+            200,
+            422,
+        ), f"Unexpected status {response.status_code} for invalid enum value"
+        assert (
+            response.status_code != 500
+        ), "Invalid enum value caused 500 Server Error — should be 422"
 
     def test_string_in_numeric_field_returns_422(self, client, valid_payload):
         """Passing a string for a numeric field should return 422."""
         bad_payload = {**valid_payload, "AMT_INCOME_TOTAL": "not_a_number"}
         response = client.post("/v1/predict", json=bad_payload)
-        assert response.status_code == 422, (
-            f"Expected 422 for string in numeric field, got {response.status_code}"
-        )
+        assert (
+            response.status_code == 422
+        ), f"Expected 422 for string in numeric field, got {response.status_code}"
 
     def test_none_for_all_optional_fields_is_handled(self, client):
         """All-None payload should not cause 500 — missing values are imputed."""

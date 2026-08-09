@@ -105,15 +105,11 @@ def _local_explanation(
         # Transform the input
         input_eng = fe.transform(input_df)
         drop_cols = [c for c in ["SK_ID_CURR"] if c in input_eng.columns]
-        input_pp = preprocessor.transform(
-            input_eng.drop(columns=drop_cols, errors="ignore")
-        )
+        input_pp = preprocessor.transform(input_eng.drop(columns=drop_cols, errors="ignore"))
         feature_names = preprocessor.get_feature_names_out()
 
         explainer = shap.TreeExplainer(
-            classifier
-            if not hasattr(classifier, "base_estimator")
-            else classifier.base_estimator,
+            classifier if not hasattr(classifier, "base_estimator") else classifier.base_estimator,
             feature_perturbation="interventional",
         )
         shap_values = explainer.shap_values(input_pp)
@@ -131,9 +127,7 @@ def _local_explanation(
         for idx in indices:
             if len(risk_factors) >= top_n and len(protective_factors) >= top_n:
                 break
-            feat_name = (
-                feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
-            )
+            feat_name = feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
             shap_val = float(sv[idx])
             label = _readable_name(feat_name)
 
@@ -209,15 +203,11 @@ class ModelRegistry:
         pipeline = joblib.load(pipeline_path)
 
         # Load metadata (optional)
-        metadata_path = os.path.join(
-            os.path.dirname(pipeline_path), "model_metadata.json"
-        )
+        metadata_path = os.path.join(os.path.dirname(pipeline_path), "model_metadata.json")
         if os.path.exists(metadata_path):
             with open(metadata_path) as f:
                 metadata = json.load(f)
-            logger.info(
-                f"Metadata loaded. Version: {metadata.get('model_version', 'unknown')}"
-            )
+            logger.info(f"Metadata loaded. Version: {metadata.get('model_version', 'unknown')}")
         else:
             logger.warning(f"No metadata file at {metadata_path}. Using defaults.")
             metadata = {}
@@ -251,12 +241,16 @@ class ModelRegistry:
         probabilities = self.pipeline.predict_proba(input_df)[:, 1]
 
         results = {
-            "probability": float(round(probabilities[0], 6))
-            if len(probabilities) == 1
-            else [float(round(p, 6)) for p in probabilities],
-            "predicted_class": int(probabilities[0] >= t)
-            if len(probabilities) == 1
-            else [int(p >= t) for p in probabilities],
+            "probability": (
+                float(round(probabilities[0], 6))
+                if len(probabilities) == 1
+                else [float(round(p, 6)) for p in probabilities]
+            ),
+            "predicted_class": (
+                int(probabilities[0] >= t)
+                if len(probabilities) == 1
+                else [int(p >= t) for p in probabilities]
+            ),
             "threshold": float(t),
             "model_version": self.model_version,
         }
@@ -287,9 +281,7 @@ def run_batch_prediction(config_path: str = "config/config.yaml") -> None:
     logger.info(f"Running batch predictions on {len(test_df):,} rows...")
     probabilities = registry.pipeline.predict_proba(test_df)[:, 1]
 
-    result_df = pd.DataFrame(
-        {"SK_ID_CURR": test_df["SK_ID_CURR"], "TARGET": probabilities}
-    )
+    result_df = pd.DataFrame({"SK_ID_CURR": test_df["SK_ID_CURR"], "TARGET": probabilities})
 
     out_path = config["data_paths"]["test_result"]
     result_df.to_csv(out_path, index=False)

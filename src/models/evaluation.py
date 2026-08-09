@@ -378,8 +378,6 @@ if __name__ == "__main__":
     metrics = full_metrics(y_sample, proba, threshold=threshold, label="Sample eval")
 
     os.makedirs("reports", exist_ok=True)
-    calibration_report(
-        y_sample, proba, label="LightGBM", save_path="reports/calibration_curve.png"
-    )
+    calibration_report(y_sample, proba, label="LightGBM", save_path="reports/calibration_curve.png")
     plot_roc_pr_curves(y_sample, proba, save_dir="reports")
     logger.info("Evaluation complete. Plots saved to reports/")

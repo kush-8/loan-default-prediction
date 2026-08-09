@@ -11,16 +11,16 @@ def create_loan_application_schema(config_path: str):
     Creates the Pydantic schema from saved JSON files, including dynamic Enums.
     """
     # Load all necessary configuration and schema files
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
 
-    with open(config["data_paths"]["api_schema"], "r") as f:
+    with open(config["data_paths"]["api_schema"]) as f:
         schema = json.load(f)
 
-    with open(config["data_paths"]["column_descriptions"], "r") as f:
+    with open(config["data_paths"]["column_descriptions"]) as f:
         description_dict = json.load(f)
 
-    with open(config["data_paths"]["categorical_enums"], "r") as f:
+    with open(config["data_paths"]["categorical_enums"]) as f:
         enums_dict = json.load(f)
 
     # Define how to map pandas dtypes to Python types for the API

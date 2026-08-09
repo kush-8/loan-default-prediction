@@ -5,9 +5,7 @@ import zipfile
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 # Set up a simple logger
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 

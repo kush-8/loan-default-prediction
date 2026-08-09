@@ -18,6 +18,11 @@ Run
 import logging
 import os
 import sys
+from pathlib import Path
+
+# Add project root to path so joblib can unpickle src.models.preprocessing
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 import joblib
 import matplotlib
@@ -218,9 +223,12 @@ def generate_explanations(config_path: str = "config/config.yaml") -> None:
         + "\n".join(protect_lines)
         + "\n\n[Note: This is a model explanation, not a causal or legal determination.]"
     )
-    print(text_example)
+    try:
+        print(text_example)
+    except UnicodeEncodeError:
+        print(text_example.encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
 
-    with open("reports/example_local_explanation.txt", "w") as f:
+    with open("reports/example_local_explanation.txt", "w", encoding="utf-8") as f:
         f.write(text_example)
     logger.info("Saved: reports/example_local_explanation.txt")
     logger.info("--- Explanation generation complete ---")

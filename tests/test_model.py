@@ -75,9 +75,7 @@ class TestProbabilityConstraints:
     def test_no_nan_in_predictions(self, trained_pipeline, sample_X):
         """Predictions must not contain NaN."""
         proba = trained_pipeline.predict_proba(sample_X)[:, 1]
-        assert not np.isnan(proba).any(), (
-            f"Found {np.isnan(proba).sum()} NaN predictions"
-        )
+        assert not np.isnan(proba).any(), f"Found {np.isnan(proba).sum()} NaN predictions"
 
     def test_no_all_same_predictions(self, trained_pipeline, sample_X):
         """The model must produce varying probabilities (not all the same)."""
@@ -106,9 +104,7 @@ class TestPerformance:
 
         proba = trained_pipeline.predict_proba(sample_X)[:, 1]
         auc = roc_auc_score(sample_y, proba)
-        assert auc < 0.99, (
-            f"ROC-AUC={auc:.4f} is suspiciously high. Check for data leakage."
-        )
+        assert auc < 0.99, f"ROC-AUC={auc:.4f} is suspiciously high. Check for data leakage."
 
 
 class TestThresholdLogic:

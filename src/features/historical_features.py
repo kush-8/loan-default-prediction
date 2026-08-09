@@ -64,9 +64,7 @@ def _aggregate_bureau_balance(bureau_balance: pd.DataFrame) -> pd.DataFrame:
     """
     bb_cat = pd.get_dummies(bureau_balance, columns=["STATUS"], drop_first=True)
     bb_agg = bb_cat.groupby("SK_ID_BUREAU").agg(["mean", "sum", "var"])
-    bb_agg.columns = pd.Index(
-        ["BB_" + e[0] + "_" + e[1].upper() for e in bb_agg.columns.tolist()]
-    )
+    bb_agg.columns = pd.Index(["BB_" + e[0] + "_" + e[1].upper() for e in bb_agg.columns.tolist()])
     return bb_agg
 
 
@@ -131,9 +129,7 @@ def _aggregate_installments(installments: pd.DataFrame) -> pd.DataFrame:
         np.nan,
         installments["AMT_PAYMENT"] / installments["AMT_INSTALMENT"],
     )
-    installments["PAYMENT_DIFF"] = (
-        installments["AMT_INSTALMENT"] - installments["AMT_PAYMENT"]
-    )
+    installments["PAYMENT_DIFF"] = installments["AMT_INSTALMENT"] - installments["AMT_PAYMENT"]
 
     agg = installments.groupby("SK_ID_CURR").agg(
         {
@@ -144,9 +140,7 @@ def _aggregate_installments(installments: pd.DataFrame) -> pd.DataFrame:
             "AMT_PAYMENT": ["mean", "sum", "max"],
         }
     )
-    agg.columns = pd.Index(
-        ["INSTAL_" + e[0] + "_" + e[1].upper() for e in agg.columns.tolist()]
-    )
+    agg.columns = pd.Index(["INSTAL_" + e[0] + "_" + e[1].upper() for e in agg.columns.tolist()])
     return agg
 
 
@@ -163,9 +157,7 @@ def _aggregate_pos_cash(pos_cash: pd.DataFrame) -> pd.DataFrame:
             "CNT_INSTALMENT_FUTURE": ["mean", "sum", "min"],
         }
     )
-    agg.columns = pd.Index(
-        ["POS_" + e[0] + "_" + e[1].upper() for e in agg.columns.tolist()]
-    )
+    agg.columns = pd.Index(["POS_" + e[0] + "_" + e[1].upper() for e in agg.columns.tolist()])
     return agg
 
 
@@ -184,9 +176,7 @@ def _aggregate_credit_card(credit_card: pd.DataFrame) -> pd.DataFrame:
             "SK_DPD": ["mean", "max", "sum"],
         }
     )
-    agg.columns = pd.Index(
-        ["CC_" + e[0] + "_" + e[1].upper() for e in agg.columns.tolist()]
-    )
+    agg.columns = pd.Index(["CC_" + e[0] + "_" + e[1].upper() for e in agg.columns.tolist()])
     return agg
 
 
@@ -289,20 +279,15 @@ def build_historical_features(config: dict) -> pd.DataFrame:
     hist = hist.join(prev_agg, how="outer")
 
     # Clean column names (remove special chars)
-    hist.columns = [
-        "".join(c if c.isalnum() else "_" for c in str(col)) for col in hist.columns
-    ]
+    hist.columns = ["".join(c if c.isalnum() else "_" for c in str(col)) for col in hist.columns]
 
     logger.info(
-        f"Historical feature table built: {hist.shape[0]} applicants, "
-        f"{hist.shape[1]} features."
+        f"Historical feature table built: {hist.shape[0]} applicants, " f"{hist.shape[1]} features."
     )
     return hist
 
 
-def load_or_build_historical_features(
-    config: dict, cache_path: str | None = None
-) -> pd.DataFrame:
+def load_or_build_historical_features(config: dict, cache_path: str | None = None) -> pd.DataFrame:
     """
     Load historical features from a cached Parquet file if it exists,
     otherwise build from raw CSVs and save the cache.

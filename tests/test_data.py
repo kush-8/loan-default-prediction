@@ -57,15 +57,12 @@ class TestDataSchema:
     def test_data_has_minimum_rows(self, sample_data):
         """Dataset must have at least 1000 rows to be statistically useful."""
         assert sample_data.shape[0] >= 1000, (
-            f"Only {sample_data.shape[0]} rows found. "
-            "Need at least 1000 for meaningful tests."
+            f"Only {sample_data.shape[0]} rows found. " "Need at least 1000 for meaningful tests."
         )
 
     def test_data_has_minimum_columns(self, sample_data):
         """Dataset should have over 100 columns (raw + engineered)."""
-        assert sample_data.shape[1] > 100, (
-            f"Only {sample_data.shape[1]} columns. Expected > 100."
-        )
+        assert sample_data.shape[1] > 100, f"Only {sample_data.shape[1]} columns. Expected > 100."
 
     def test_required_columns_exist(self, sample_data):
         """All business-critical columns must be present."""
@@ -96,8 +93,7 @@ class TestDataSchema:
         non_numeric = [
             c
             for c in NUMERIC_COLUMNS
-            if c in sample_data.columns
-            and not pd.api.types.is_numeric_dtype(sample_data[c])
+            if c in sample_data.columns and not pd.api.types.is_numeric_dtype(sample_data[c])
         ]
         assert not non_numeric, f"Non-numeric dtype for: {non_numeric}"
 
@@ -160,9 +156,7 @@ class TestDataConstraints:
 class TestDataEdgeCases:
     def test_no_all_null_rows(self, sample_data):
         """Rows with all values null are invalid."""
-        feature_cols = [
-            c for c in sample_data.columns if c not in ["SK_ID_CURR", "TARGET"]
-        ]
+        feature_cols = [c for c in sample_data.columns if c not in ["SK_ID_CURR", "TARGET"]]
         all_null_rows = sample_data[feature_cols].isnull().all(axis=1).sum()
         assert all_null_rows == 0, f"Found {all_null_rows} rows with all-null features"
 

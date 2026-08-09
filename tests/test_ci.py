@@ -61,9 +61,10 @@ class TestAPIStartup:
 
         with TestClient(app, raise_server_exceptions=False) as client:
             response = client.get("/health")
-            assert response.status_code in (200, 503), (
-                f"Expected 200 or 503 from /health, got {response.status_code}"
-            )
+            assert response.status_code in (
+                200,
+                503,
+            ), f"Expected 200 or 503 from /health, got {response.status_code}"
 
     def test_predict_endpoint_registered(self):
         """POST /v1/predict must be a registered route."""
@@ -79,9 +80,7 @@ class TestAPIStartup:
         from src.api.app import app
 
         with TestClient(app, raise_server_exceptions=False) as client:
-            response = client.post(
-                "/v1/predict", json={"AMT_INCOME_TOTAL": "this_is_not_a_number"}
-            )
+            response = client.post("/v1/predict", json={"AMT_INCOME_TOTAL": "this_is_not_a_number"})
             assert response.status_code == 422, (
                 f"Expected 422 for invalid numeric type, got {response.status_code}: "
                 f"{response.text}"

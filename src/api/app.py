@@ -5,24 +5,29 @@ FastAPI inference service for the loan default risk model.
 
 Endpoints
 ---------
-GET  /health           — liveness + model status check
-POST /v1/predict       — single applicant default probability
+GET  /health           — liveness check + model status
+GET  /ready            — readiness probe (model loaded + functional)
+GET  /model-info       — full model metadata JSON
+GET  /                 — legacy root status
+POST /v1/predict       — single applicant default probability + risk category
 
 Key design decisions
 --------------------
 - Model pipeline is loaded ONCE at startup (lifespan context manager).
-  It is stored in ``app.state.pipeline`` and never reloaded per request.
+  It is stored in ``app.state.registry`` and never reloaded per request.
 - Model metadata (threshold, version) is loaded from the companion JSON file.
 - Request validation is handled by Pydantic v2 — invalid inputs return
   HTTP 422 with a structured error body (not a raw 500 traceback).
-- The response includes probability, predicted class, threshold, and
-  model version so callers can audit which model produced the result.
+- The response includes probability, risk_category, predicted class, threshold,
+  and model version so callers can audit which model produced the result.
+- Risk categories (LOW/MEDIUM/HIGH/VERY HIGH) are configurable research-demo
+  policies, not real-world banking thresholds.
 - SHAP-based local explanations are computed on demand if the pipeline
   exposes a LightGBM classifier.
 
 Run
 ---
-    uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
+    uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --reload
 """
 
 import logging
@@ -97,8 +102,7 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     elapsed_ms = (time.perf_counter() - start) * 1000
     logger.info(
-        f"{request.method} {request.url.path} → {response.status_code} "
-        f"({elapsed_ms:.1f}ms)"
+        f"{request.method} {request.url.path} → {response.status_code} " f"({elapsed_ms:.1f}ms)"
     )
     return response
 
@@ -111,7 +115,7 @@ async def log_requests(request: Request, call_next):
 @app.get("/health", tags=["Ops"])
 def health_check() -> dict[str, Any]:
     """
-    Liveness and readiness check.
+    Liveness check.
 
     Returns HTTP 200 with model status when the model is loaded,
     or HTTP 503 if the model failed to load at startup.
@@ -127,11 +131,56 @@ def health_check() -> dict[str, Any]:
     return {
         "status": "healthy",
         "model_version": registry.metadata.get("model_version", "unknown"),
-        "calibration": registry.metadata.get("model", {}).get(
-            "calibration_method", "none"
-        ),
+        "calibration": registry.metadata.get("model", {}).get("calibration_method", "none"),
         "threshold": registry.threshold,
     }
+
+
+@app.get("/ready", tags=["Ops"])
+def readiness_check() -> dict[str, Any]:
+    """
+    Readiness probe — confirms model is loaded AND functional.
+
+    Unlike /health (liveness), this endpoint verifies the model can
+    actually process a request. Kubernetes readiness probes should use
+    this endpoint to gate traffic.
+    """
+    registry: ModelRegistry | None = getattr(app.state, "registry", None)
+    if registry is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Model is not loaded.",
+        )
+    # Confirm pipeline has the expected steps
+    try:
+        step_names = [name for name, _ in registry.pipeline.steps]
+        required = {"feature_engineering", "preprocessor", "classifier"}
+        if not required.issubset(set(step_names)):
+            raise ValueError(f"Pipeline missing steps: {required - set(step_names)}")
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Model pipeline validation failed: {exc}",
+        )
+    return {"status": "ready", "model_version": registry.model_version}
+
+
+@app.get("/model-info", tags=["Ops"])
+def model_info() -> dict[str, Any]:
+    """
+    Return full model metadata.
+
+    Includes training timestamp, dataset hash, hyperparameters, evaluation
+    metrics, threshold candidates, calibration method, and environment info.
+    Useful for audit, reproducibility, and dashboard display.
+    """
+    registry: ModelRegistry | None = getattr(app.state, "registry", None)
+    if registry is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Model is not loaded.",
+        )
+    return registry.metadata
 
 
 @app.get("/", tags=["Ops"], include_in_schema=False)
@@ -175,9 +224,7 @@ def predict_v1(application_data: LoanApplication) -> dict[str, Any]:
             raise ValueError("Empty request body or all-null fields")
 
         # Convert enum values to their string representation
-        input_dict = {
-            k: (v.value if hasattr(v, "value") else v) for k, v in input_dict.items()
-        }
+        input_dict = {k: (v.value if hasattr(v, "value") else v) for k, v in input_dict.items()}
         input_df = pd.DataFrame([input_dict])
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(
@@ -193,6 +240,25 @@ def predict_v1(application_data: LoanApplication) -> dict[str, Any]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Prediction failed. Please check the input format and try again.",
         )
+
+    # Add risk category (configurable demo policy — not real banking thresholds)
+    prob = (
+        result["probability"]
+        if isinstance(result["probability"], float)
+        else result["probability"][0]
+    )
+    if prob < 0.15:
+        risk_category = "LOW"
+    elif prob < 0.30:
+        risk_category = "MEDIUM"
+    elif prob < 0.50:
+        risk_category = "HIGH"
+    else:
+        risk_category = "VERY HIGH"
+    result["risk_category"] = risk_category
+    result["risk_category_note"] = (
+        "Configurable demo thresholds: LOW <15%, MEDIUM 15-30%, HIGH 30-50%, VERY HIGH ≥50%"
+    )
 
     return result
 

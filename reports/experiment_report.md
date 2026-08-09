@@ -203,20 +203,22 @@ as a limitation.
 
 **Evaluated on validation set only** (test set untouched):
 
-| Strategy | Threshold | Precision | Recall | F1 | FP | FN |
-|---|---|---|---|---|---|---|
-| Default (0.5) | 0.500 | ~0.52 | ~0.33 | ~0.40 | low | high |
-| F1-optimal | ~0.35 | ~0.45 | ~0.52 | ~0.48 | moderate | moderate |
-| Recall ≥ 60% | ~0.28 | ~0.38 | ~0.61 | ~0.47 | higher | lower |
-| Cost-optimal (FN×5) | ~0.30 | ~0.40 | ~0.58 | ~0.47 | moderate | lower |
+| Strategy | Threshold | Precision | Recall | F1 |
+|---|---|---|---|---|
+| Default (0.5) | 0.500 | 0.000 | 0.000 | 0.000 |
+| **F1-optimal (selected)** | **0.1479** | **0.250** | **0.447** | **0.321** |
+| Cost-optimal (FN×5) | 0.1577 | — | — | — |
+| Recall ≥ 60% | 0.0986 | — | — | — |
 
-**Selected**: F1-optimal threshold (~0.35) as the default recommendation.
+> All values are computed on the validation split. The F1-optimal threshold (0.1479) is substantially lower than 0.5
+> because the dataset is severely imbalanced (8.1% positives). A higher threshold would miss most defaults.
+
+**Selected**: F1-optimal threshold = **0.1479**, recorded in `model_metadata.json → threshold.selected`.
 
 **Business rationale**: In a lending context, a false negative (missed default)
 typically costs 5–10× more than a false positive (wrongly rejected applicant).
-The cost-optimal threshold better reflects this, but requires calibration of
-the exact cost ratio. F1-optimal is used as the documented default; operators
-can adjust using the threshold candidates in `model_metadata.json`.
+The cost-optimal threshold (0.1577) better reflects this asymmetry. F1-optimal
+is used as the default; operators can switch using `threshold.all_candidates` in metadata.
 
 ---
 
@@ -226,21 +228,20 @@ can adjust using the threshold candidates in `model_metadata.json`.
 
 **Evaluated on validation set:**
 
-| Method | Brier Score | ECE |
-|---|---|---|
-| Uncalibrated LightGBM | 0.0631 | 0.0183 |
-| Platt scaling (sigmoid) | 0.0628 | 0.0175 |
-| Isotonic regression | 0.0635 | 0.0180 |
+| Method | Brier Score (val) | ECE | Decision |
+|---|---|---|---|
+| Uncalibrated LightGBM | 0.0669 | ~0.018 | baseline |
+| Platt scaling (sigmoid) | ~0.0666 | ~0.017 | <1% improvement |
+| Isotonic regression | ~0.0672 | ~0.018 | no improvement |
 
-**Finding**: LightGBM's raw probabilities are reasonably well-calibrated
-(ECE ≈ 1.8%). Sigmoid scaling provides a marginal improvement. Isotonic
-regression shows no meaningful benefit on this dataset (likely overfits
-the calibration set).
+**Finding**: LightGBM's raw probabilities are reasonably well-calibrated.
+Sigmoid scaling provides marginal improvement (<1%) which does not meet
+our 1% threshold criterion.
 
-**Decision**: If sigmoid calibration improves Brier score by > 1% on validation,
-it is included. Otherwise, uncalibrated LightGBM is used to avoid adding
-complexity without measurable benefit. The `calibration_method` field in
-`model_metadata.json` records which was applied.
+**Decision**: Uncalibrated LightGBM is used. Recorded in `model_metadata.json → model.calibration_method = "none"`.
+
+> Note: ECE values are approximate estimates from the calibration curve. The authoritative
+> Brier score values are those logged by `train.py` during calibration evaluation.
 
 ---
 
@@ -248,19 +249,22 @@ complexity without measurable benefit. The `calibration_method` field in
 
 > ⚠️ **The following metrics were computed on the held-out test set exactly once.**
 > They were not used to select the model, threshold, or calibration method.
-
-*Note: Actual numbers will be populated after re-running `train.py` with the
-raw data available. The values below are representative of the performance
-range observed in validation experiments.*
+> Source: `models/model_metadata.json → test_metrics`
 
 | Metric | Value† |
 |---|---|
-| ROC-AUC | 0.7748 |
-| PR-AUC | ~0.42 |
-| Brier Score | ~0.063 |
-| F1 (at selected threshold) | ~0.47 |
-| Recall (at selected threshold) | ~0.52 |
-| Precision (at selected threshold) | ~0.44 |
+| ROC-AUC | **0.7720** |
+| PR-AUC | **0.2561** |
+| Brier Score | **0.0671** |
+| Log Loss | **0.2424** |
+| F1 (at threshold 0.1479) | **0.3280** |
+| Recall (at threshold 0.1479) | **0.4549** |
+| Precision (at threshold 0.1479) | **0.2565** |
+| Threshold used | **0.1479** (F1-optimal on val) |
+
+> Note: The relatively low PR-AUC (0.2561) compared to ROC-AUC (0.7720) is expected
+> and correct for a severely imbalanced dataset (8.1% positive rate). PR-AUC is
+> bounded by the positive rate and is the more meaningful metric for rare-event prediction.
 
 ---
 

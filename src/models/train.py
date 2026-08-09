@@ -125,11 +125,7 @@ def find_optimal_threshold(
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0
 
-        f1 = (
-            2 * precision * recall / (precision + recall)
-            if (precision + recall) > 0
-            else 0
-        )
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
         if f1 > best_f1:
             best_f1, best_f1_thresh = f1, float(t)
 
@@ -226,8 +222,7 @@ def run_training(config_path: str = "config/config.yaml") -> None:
     )
 
     logger.info(
-        f"Split sizes → train: {len(X_train):,}  val: {len(X_val):,}  "
-        f"test: {len(X_test):,}"
+        f"Split sizes → train: {len(X_train):,}  val: {len(X_val):,}  " f"test: {len(X_test):,}"
     )
     logger.info(
         f"Positive rate → train: {y_train.mean():.3f}  val: {y_val.mean():.3f}  "
@@ -249,9 +244,7 @@ def run_training(config_path: str = "config/config.yaml") -> None:
     # 5. Discover column types from training-engineered data
     # ------------------------------------------------------------------
     numerical_cols = [
-        c
-        for c in X_train_fe.select_dtypes(include=np.number).columns
-        if c != "SK_ID_CURR"
+        c for c in X_train_fe.select_dtypes(include=np.number).columns if c != "SK_ID_CURR"
     ]
     categorical_cols = X_train_fe.select_dtypes(include="object").columns.tolist()
 
@@ -285,21 +278,14 @@ def run_training(config_path: str = "config/config.yaml") -> None:
     # ------------------------------------------------------------------
     preprocessor = create_preprocessor(numerical_cols, categorical_cols)
 
-    Pipeline(
-        steps=[
-            ("feature_engineering", fe),
-            ("preprocessor", preprocessor),
-            ("classifier", lgb.LGBMClassifier(**best_params)),
-        ]
-    )
+    # NOTE: We deliberately fit the preprocessor and classifier separately on
+    # the pre-engineered data rather than assembling a single Pipeline here.
+    # Reason: FullFeatureEngineering is already fitted (step 4 above). If we
+    # called Pipeline.fit(), sklearn would call fe.fit_transform() again on the
+    # training data — refitting bins and losing the fitted state. The inference
+    # pipeline is assembled in step 11 below AFTER all components are fitted.
 
     logger.info("Training pipeline on training data...")
-    # Note: the pipeline's feature_engineering step is already fitted;
-    # Pipeline.fit() will call fe.transform() (not fit_transform()) because
-    # it detects the step is already fitted? Actually, Pipeline always calls
-    # fit_transform on intermediate steps during fit(). We work around this
-    # by fitting the preprocessor and classifier separately on pre-engineered data.
-
     # Train preprocessor and classifier on pre-engineered training data
     preprocessor.fit(X_train_fe.drop(columns=["SK_ID_CURR"]), y_train)
     X_train_pp = preprocessor.transform(X_train_fe.drop(columns=["SK_ID_CURR"]))
@@ -356,16 +342,11 @@ def run_training(config_path: str = "config/config.yaml") -> None:
         "sigmoid": (brier_sigmoid, cal_sigmoid),
         "isotonic": (brier_isotonic, cal_isotonic),
     }
-    best_cal_name, (best_brier, best_classifier) = min(
-        brier_scores.items(), key=lambda x: x[1][0]
-    )
+    best_cal_name, (best_brier, best_classifier) = min(brier_scores.items(), key=lambda x: x[1][0])
 
     # Only use calibration if it improves Brier score by > 1%
     improvement_threshold = 0.01
-    if (
-        best_cal_name != "none"
-        and (brier_uncal - best_brier) > improvement_threshold * brier_uncal
-    ):
+    if best_cal_name != "none" and (brier_uncal - best_brier) > improvement_threshold * brier_uncal:
         logger.info(
             f"Using calibration: {best_cal_name} (Brier improvement: "
             f"{brier_uncal - best_brier:.4f})"

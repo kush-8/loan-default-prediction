@@ -60,9 +60,7 @@ _N_QUANTILE_BINS = 5
 
 def _clean_col_names(df: pd.DataFrame) -> pd.DataFrame:
     """Replace non-alphanumeric characters in column names with underscores."""
-    df.columns = [
-        "".join(c if c.isalnum() else "_" for c in str(col)) for col in df.columns
-    ]
+    df.columns = ["".join(c if c.isalnum() else "_" for c in str(col)) for col in df.columns]
     return df
 
 
@@ -118,14 +116,14 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
     # ------------------------------------------------------------------
 
     def _load_config(self) -> dict:
-        with open(self.config_path, "r") as fh:
+        with open(self.config_path) as fh:
             return yaml.safe_load(fh)
 
     def _load_feature_lists(self, config: dict) -> tuple:
         """Return (main_table_top_features, final_top_features)."""
-        with open(config["model_assets"]["main_table_top_features"], "r") as fh:
+        with open(config["model_assets"]["main_table_top_features"]) as fh:
             main_feats = json.load(fh)
-        with open(config["model_assets"]["final_top_features"], "r") as fh:
+        with open(config["model_assets"]["final_top_features"]) as fh:
             final_feats = json.load(fh)
         return main_feats, final_feats
 
@@ -160,29 +158,19 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
 
         # Anomaly flags and fixes
         days_employed = (
-            X["DAYS_EMPLOYED"]
-            if "DAYS_EMPLOYED" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["DAYS_EMPLOYED"] if "DAYS_EMPLOYED" in X.columns else pd.Series(np.nan, index=X.index)
         )
-        X["DAYS_EMPLOYED_ANOMALY"] = (
-            days_employed == _SPECIAL_DAYS_EMPLOYED_VALUE
-        ).astype(int)
-        X["DAYS_EMPLOYED"] = days_employed.replace(
-            {_SPECIAL_DAYS_EMPLOYED_VALUE: np.nan}
-        )
+        X["DAYS_EMPLOYED_ANOMALY"] = (days_employed == _SPECIAL_DAYS_EMPLOYED_VALUE).astype(int)
+        X["DAYS_EMPLOYED"] = days_employed.replace({_SPECIAL_DAYS_EMPLOYED_VALUE: np.nan})
 
         own_car_age = (
-            X["OWN_CAR_AGE"]
-            if "OWN_CAR_AGE" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["OWN_CAR_AGE"] if "OWN_CAR_AGE" in X.columns else pd.Series(np.nan, index=X.index)
         )
         X["FLAG_OWN_CAR"] = own_car_age.notna().astype(int)
 
         # Time-based features
         days_birth = (
-            X["DAYS_BIRTH"]
-            if "DAYS_BIRTH" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["DAYS_BIRTH"] if "DAYS_BIRTH" in X.columns else pd.Series(np.nan, index=X.index)
         )
         X["YEARS_BIRTH"] = days_birth / -365.0
 
@@ -193,14 +181,10 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
             else pd.Series(np.nan, index=X.index)
         )
         amt_credit = (
-            X["AMT_CREDIT"]
-            if "AMT_CREDIT" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["AMT_CREDIT"] if "AMT_CREDIT" in X.columns else pd.Series(np.nan, index=X.index)
         )
         amt_annuity = (
-            X["AMT_ANNUITY"]
-            if "AMT_ANNUITY" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["AMT_ANNUITY"] if "AMT_ANNUITY" in X.columns else pd.Series(np.nan, index=X.index)
         )
 
         income = amt_income.replace(0, np.nan)
@@ -212,19 +196,13 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
 
         # Interaction feature — safe against missing EXT_SOURCE columns
         src1 = (
-            X["EXT_SOURCE_1"]
-            if "EXT_SOURCE_1" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["EXT_SOURCE_1"] if "EXT_SOURCE_1" in X.columns else pd.Series(np.nan, index=X.index)
         )
         src2 = (
-            X["EXT_SOURCE_2"]
-            if "EXT_SOURCE_2" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["EXT_SOURCE_2"] if "EXT_SOURCE_2" in X.columns else pd.Series(np.nan, index=X.index)
         )
         src3 = (
-            X["EXT_SOURCE_3"]
-            if "EXT_SOURCE_3" in X.columns
-            else pd.Series(np.nan, index=X.index)
+            X["EXT_SOURCE_3"] if "EXT_SOURCE_3" in X.columns else pd.Series(np.nan, index=X.index)
         )
         X["EXT_SOURCE_PRODUCT"] = src1 * src2 * src3
 
@@ -283,8 +261,7 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
         """
         if not hasattr(self, "bin_edges_"):
             raise RuntimeError(
-                "FullFeatureEngineering has not been fitted. "
-                "Call fit() before transform()."
+                "FullFeatureEngineering has not been fitted. " "Call fit() before transform()."
             )
 
         config = self._load_config()
@@ -342,9 +319,7 @@ class FullFeatureEngineering(BaseEstimator, TransformerMixin):
 # ---------------------------------------------------------------------------
 
 
-def create_preprocessor(
-    numerical_cols: list, categorical_cols: list
-) -> ColumnTransformer:
+def create_preprocessor(numerical_cols: list, categorical_cols: list) -> ColumnTransformer:
     """
     Build and return the sklearn ColumnTransformer for standard preprocessing.
 
@@ -377,9 +352,7 @@ def create_preprocessor(
             ("imputer", SimpleImputer(strategy="most_frequent")),
             (
                 "onehot",
-                OneHotEncoder(
-                    handle_unknown="ignore", drop="first", sparse_output=False
-                ),
+                OneHotEncoder(handle_unknown="ignore", drop="first", sparse_output=False),
             ),
         ]
     )

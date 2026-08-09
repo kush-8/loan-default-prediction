@@ -15,15 +15,17 @@ Docker deployment, and CI/CD automation.
 
 | Metric | Value |
 |---|---|
-| **ROC-AUC** | **0.7748** |
-| PR-AUC | ~0.42 |
-| Brier Score | ~0.063 |
-| F1 (at optimal threshold) | ~0.47 |
-| Recall | ~0.52 |
-| Classification Threshold | ~0.35 (F1-optimal on validation) |
-| Calibration | Platt scaling if Brier improves > 1% |
+| **ROC-AUC** | **0.7720** |
+| PR-AUC | 0.2561 |
+| Brier Score | 0.0671 |
+| F1 (at selected threshold) | 0.3280 |
+| Recall | 0.4549 |
+| Precision | 0.2565 |
+| Classification Threshold | 0.1479 (F1-optimal on validation) |
+| Calibration | None applied (Brier improvement < 1%) |
 
-*Metrics computed on a held-out 15% test set, evaluated exactly once.*
+*Metrics computed on a held-out 15% test set (46,127 rows), evaluated exactly once.*
+*Source of truth: `models/model_metadata.json`*
 
 ---
 
@@ -164,17 +166,17 @@ LightGBM (tuned)     →  ROC-AUC ≈ 0.77  [+5pp vs RF, selected]
 
 The classification threshold (default: **0.5**) is almost always wrong for imbalanced datasets.
 
-For this problem, the F1-optimal threshold (~0.35) is selected on the **validation set only**.
+For this problem, the F1-optimal threshold (**0.1479**) is selected on the **validation set only**.
 The test set is never used for threshold selection.
 
-| Strategy | Threshold | Recall | Precision | FN (missed defaults) |
-|---|---|---|---|---|
-| Default 0.5 | 0.50 | ~0.33 | ~0.52 | High |
-| **F1-optimal (selected)** | **~0.35** | **~0.52** | **~0.44** | **Moderate** |
-| Recall ≥ 60% | ~0.28 | ~0.61 | ~0.38 | Low |
-| Cost-optimal (FN cost = 5×FP) | ~0.30 | ~0.58 | ~0.40 | Lower |
+| Strategy | Threshold | Notes |
+|---|---|---|
+| Default 0.5 | 0.500 | Misses most positives in imbalanced data |
+| **F1-optimal (selected)** | **0.1479** | Maximises F1 on validation set |
+| Cost-optimal (FN×5) | 0.1577 | Minimises 5×FN + 1×FP cost |
+| Recall ≥ 60% | 0.0986 | Recall-constrained threshold |
 
-The selected threshold and all candidates are recorded in `models/model_metadata.json`.
+All threshold candidates are recorded in `models/model_metadata.json → threshold.all_candidates`.
 
 ---
 
@@ -183,14 +185,14 @@ The selected threshold and all candidates are recorded in `models/model_metadata
 LightGBM's raw probabilities are evaluated with a calibration curve.
 Calibration is only applied if it improves the Brier score by > 1%.
 
-| Method | Brier Score | Improvement |
+| Method | Brier Score (val) | Decision |
 |---|---|---|
-| Uncalibrated | 0.0631 | — |
-| Platt (sigmoid) | 0.0628 | +0.5% |
-| Isotonic | 0.0635 | −0.6% |
+| Uncalibrated | 0.0669 | — |
+| Platt (sigmoid) | ~0.0666 | <1% improvement |
+| Isotonic | ~0.0672 | No improvement |
 
-→ Sigmoid calibration is borderline. The decision is made automatically at
-training time and recorded in `model_metadata.json`.
+**Result**: Calibration improvement was below the 1% threshold. The uncalibrated LightGBM is used.
+This is recorded in `model_metadata.json → model.calibration_method = "none"`.
 
 ---
 
@@ -294,15 +296,27 @@ Invalid inputs return HTTP **422** with a structured error body, not a 500 trace
 ```
 loan-default-prediction/
 ├── src/
+│   ├── api/
+│   │   ├── app.py                   # FastAPI service (load-once ModelRegistry)
+│   │   └── api_schema.py            # Pydantic v2 request model (dynamic from config)
+│   ├── data/
+│   │   └── data_ingestion.py        # Kaggle dataset download
 │   ├── features/
-│   │   └── historical_features.py   # Offline historical aggregation
-│   ├── preprocessing.py             # Leakage-free FullFeatureEngineering
-│   ├── train.py                     # 3-way split training pipeline
-│   ├── evaluation.py                # Metrics, calibration, benchmarking
-│   ├── predict.py                   # ModelRegistry (load-once pattern)
-│   ├── app.py                       # FastAPI service
-│   ├── explain.py                   # SHAP explainability
-│   └── api_schema.py                # Pydantic request model
+│   │   └── historical_features.py   # Offline historical aggregation → Parquet cache
+│   ├── models/
+│   │   ├── preprocessing.py         # Leakage-free FullFeatureEngineering transformer
+│   │   ├── train.py                 # 3-way split training pipeline
+│   │   ├── evaluation.py            # Metrics, calibration curves, benchmarking
+│   │   ├── predict.py               # ModelRegistry + SHAP local explanations
+│   │   └── explain.py               # Batch SHAP report generator
+│   └── monitoring/
+│       ├── drift.py                 # PSI, KS-statistic, Wasserstein distance
+│       └── demo_data.py             # Simulated monitoring data for dashboard
+│
+├── app/
+│   └── pages/                       # Streamlit multi-page application
+│
+├── streamlit_app.py                 # Streamlit entry point (10-page dashboard)
 │
 ├── tests/
 │   ├── conftest.py                  # Shared fixtures
@@ -326,28 +340,21 @@ loan-default-prediction/
 │
 ├── reports/
 │   ├── experiment_report.md         # Full experiment documentation
+│   ├── evaluation_artifacts.json    # Saved curves/tables for Streamlit dashboard
 │   ├── shap_summary_plot.png        # Global SHAP importance
-│   ├── shap_bar_plot.png            # Mean |SHAP| bar chart
-│   └── example_local_explanation.txt
-│
-├── notebooks/
-│   ├── 01_EDA.ipynb
-│   ├── 02_feature_engineering.ipynb
-│   ├── 03_hyperparameter_tuning.ipynb
-│   └── 04_advanced_feature_engineering.ipynb
+│   └── shap_bar_plot.png            # Mean |SHAP| bar chart
 │
 ├── scripts/
-│   ├── run_pipeline.sh              # Full pipeline automation
-│   ├── train.sh
-│   ├── predict.sh
-│   └── deploy.sh
+│   ├── download_and_train.py        # Full pipeline automation
+│   ├── generate_report_artifacts.py # Generate JSON artifacts for dashboard
+│   └── run_pipeline.sh
 │
 ├── .github/workflows/
-│   ├── ci.yml                       # Lint + test + Docker build
+│   ├── ci.yml                       # Lint + test + Docker build + security
 │   └── e2e_tests.yml                # Full pipeline (requires Kaggle credentials)
 │
-├── Dockerfile                       # Multi-layer inference image
-├── .dockerignore
+├── Dockerfile                       # Multi-layer inference image (non-root)
+├── pyproject.toml                   # ruff + pytest configuration
 ├── requirements.txt                 # Full training dependencies (pinned)
 └── requirements-api.txt             # Lean inference dependencies (pinned)
 ```
@@ -370,8 +377,11 @@ pip install -r requirements.txt
 ### 2. Download data
 
 ```bash
-# Requires Kaggle API credentials in ~/.kaggle/kaggle.json
-python src/data_ingestion.py
+# Option A: Full automated pipeline (downloads + trains)
+python scripts/download_and_train.py
+
+# Option B: Manual (requires Kaggle API credentials in ~/.kaggle/kaggle.json)
+python src/data/data_ingestion.py
 ```
 
 ### 3. Build historical feature cache (run once)
@@ -398,8 +408,16 @@ python src/explain.py
 ### 6. Run API
 
 ```bash
-uvicorn src.app:app --host 0.0.0.0 --port 8000
+uvicorn src.api.app:app --host 0.0.0.0 --port 8000
 ```
+
+### 7. Run Streamlit dashboard
+
+```bash
+pip install streamlit plotly
+streamlit run app/streamlit_app.py
+```
+
 
 ---
 
@@ -461,15 +479,15 @@ Every trained model saves a `model_metadata.json` alongside the pipeline:
 ```json
 {
   "model_version": "1.1.0",
-  "training_timestamp": "2026-08-09T14:30:00Z",
-  "git_sha": "abc1234",
-  "dataset": {"hash_md5_first10mb": "..."},
+  "training_timestamp": "2026-08-09T15:03:49+00:00",
+  "git_sha": "f87cab6",
+  "dataset": {"hash_md5_first10mb": "b06983c0549b...", "n_rows": 307511},
   "split_strategy": {"train": 0.70, "val": 0.15, "test": 0.15, "seed": 42},
-  "threshold": {"selected": 0.35, "strategy": "f1_optimal_on_val"},
-  "model": {"type": "LGBMClassifier", "calibration_method": "sigmoid"},
-  "validation_metrics": {"roc_auc": 0.777, "brier_score": 0.063},
-  "test_metrics": {"roc_auc": 0.7748, "brier_score": 0.064},
-  "environment": {"python_version": "3.10.x", "sklearn_version": "1.7.1"}
+  "threshold": {"selected": 0.1479, "strategy": "f1_optimal_on_val"},
+  "model": {"type": "LGBMClassifier", "calibration_method": "none"},
+  "validation_metrics": {"roc_auc": 0.7721, "brier_score": 0.0669},
+  "test_metrics": {"roc_auc": 0.7720, "pr_auc": 0.2561, "brier_score": 0.0671},
+  "environment": {"python_version": "3.12.1", "sklearn_version": "1.7.1"}
 }
 ```
 
@@ -506,13 +524,14 @@ Every trained model saves a `model_metadata.json` alongside the pipeline:
 |---|---|
 | ML | LightGBM, scikit-learn, SHAP, Optuna |
 | API | FastAPI, Pydantic v2, Uvicorn |
-| Data | Pandas, NumPy |
+| Dashboard | Streamlit, Plotly |
+| Data | Pandas, NumPy, PyArrow |
 | Serialisation | joblib |
 | Testing | pytest |
 | Linting | ruff, black |
 | CI/CD | GitHub Actions |
 | Containerisation | Docker |
-| Language | Python 3.10 |
+| Language | Python 3.12 |
 
 ---
 

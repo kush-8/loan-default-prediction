@@ -42,9 +42,9 @@ class TestArtifactsExist:
 
     def test_shap_summary_plot_exists(self):
         """SHAP summary plot should exist after explain.py is run."""
-        assert os.path.exists("reports/shap_summary_plot.png"), (
-            "SHAP summary plot not found. Run: python src/explain.py"
-        )
+        assert os.path.exists(
+            "reports/shap_summary_plot.png"
+        ), "SHAP summary plot not found. Run: python src/explain.py"
 
 
 @pytest.mark.e2e
@@ -87,9 +87,9 @@ class TestMetadataSchema:
         if not model_metadata:
             pytest.skip("model_metadata.json not found")
         strategy = model_metadata.get("threshold", {}).get("strategy", "")
-        assert "test" not in strategy.lower(), (
-            f"Threshold strategy '{strategy}' references test set — this is data leakage!"
-        )
+        assert (
+            "test" not in strategy.lower()
+        ), f"Threshold strategy '{strategy}' references test set — this is data leakage!"
 
 
 @pytest.mark.e2e
